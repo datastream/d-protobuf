@@ -1,0 +1,34 @@
+message ccc
+{
+	optional int32 quersy = 3[default = 18];
+}
+message ccc2
+{
+	optional int32 quersyw = 3[default = 18];
+	optional int64 quersyc = 1[default = 18];
+	extend ccc3{
+		optional int64 quersyd = 10;
+		optional int64 quersy = 11;
+	}
+	message ccc3
+	{
+		optional bool quersyc = 1;
+		extensions 10 to 11;
+	}
+}
+message ccc1
+{
+	message ccc3
+	{
+		optional int64 quersyc = 1[default = 18];
+		optional c quersyd = 4 [default = FOO];
+	}
+	optional int32 quersy = 3[default = 18];
+	optional ccc3 quersyv =4;
+	enum c
+	{
+		FOO = 2;
+		BAR = 1;
+	}
+}
+

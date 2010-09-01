@@ -1,0 +1,12 @@
+message Test {
+  repeated int32 a = 1[packed = true];
+  optional sfixed64 b = 2[default = 10];
+  required string d = 3;
+  extend Test1 {
+     optional fixed32 ww = 10;
+  }  
+}
+message Test1 {
+  optional sint32 cc = 1;
+  extensions 10 to 11;
+}
