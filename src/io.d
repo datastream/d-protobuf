@@ -66,6 +66,10 @@ class CodedInputStream
     input = coded_stream.ptr;
     SetCache();
   }
+  this()
+  {
+    SetCache();
+  }
   void SetCache(size_t size = 1024)
   {
     cache_size = size;
@@ -371,6 +375,9 @@ class CodedOutputStream
       throw new Exception("Can't malloc memory");
     }
   }
+  this()
+  {
+  }
   ~this() {
     zstream.raw_size = ByteCount();
   }
@@ -570,11 +577,11 @@ class CodedOutputStream
   /*
    * function for write data to bytes
    */
-  byte* WriteTagToBytes(uint value, ref byte* target)
+  byte* WriteTagToBytes(uint value, byte* target)
   {
     return WriteVarint32ToBytes(value, target);
   }
-  byte* WriteVarint32SignExtendedToBytes(int value, ref byte* target)
+  byte* WriteVarint32SignExtendedToBytes(int value, byte* target)
   {
     if(value < 0) {
       return WriteVarint64ToBytes(value, target);
@@ -582,7 +589,7 @@ class CodedOutputStream
       return WriteVarint32ToBytes(value, target);
     }
   }
-  byte* WriteVarint32ToBytes(int value, ref byte* target)
+  byte* WriteVarint32ToBytes(int value, byte* target)
   {
     target[0] = value | 0x80;
     if (value >= (1 << 7)) {
@@ -616,7 +623,7 @@ class CodedOutputStream
       return target;
     }
   }
-  byte* WriteVarint64ToBytes(long value, ref byte* target)
+  byte* WriteVarint64ToBytes(long value, byte* target)
   {
     uint part0 = cast(uint)(value      );
     uint part1 = cast(uint)(value >> 28);
@@ -674,7 +681,7 @@ class CodedOutputStream
     target += size;
     return target;
   }
-  byte* WriteLittleEndian32ToBytes(uint value, ref byte* target)
+  byte* WriteLittleEndian32ToBytes(uint value, byte* target)
   {
     version(LittleEndian) {
       memcpy(target, &value, value.sizeof);
@@ -687,7 +694,7 @@ class CodedOutputStream
     }
     return target + 4;
   }
-  byte* WriteLittleEndian64ToBytes(ulong value, ref byte* target)
+  byte* WriteLittleEndian64ToBytes(ulong value, byte* target)
   {
     version(LittleEndian) {
       memcpy(target, &value, value.sizeof);
@@ -706,7 +713,7 @@ class CodedOutputStream
     }
     return target + 9;
   }
-  byte* WriteStringToBytes(char[] value, ref byte* target)
+  byte* WriteStringToBytes(char[] value, byte* target)
   {
     memcpy(target, &value, value.length);
     return target + value.length;

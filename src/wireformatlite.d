@@ -1,6 +1,8 @@
 private import tango.io.Stdout;
 private import commen;
 private import io;
+private import messagelite;
+
 
 private alias char[] string;
 
@@ -129,8 +131,8 @@ class WireFormatLite
     if(T == Type.TYPE_BOOL) {
       uint tmp;
       if(!input.ReadVarint32(tmp)) return false;
-      value = (tmp != 0)
-              }
+      value = (tmp != 0);
+    }
     if(T == Type.TYPE_ENUM) {
       uint tmp;
       if(!input.ReadVarint32(tmp)) return false;
@@ -182,29 +184,29 @@ class WireFormatLite
   byte* ReadPrimitiveFromBytes(V, T)(byte* buffer, ref V value)
   {
     if(T == Type.TYPE_FIXED32) {
-      return CodedInputStream::ReadLittleEndian32FromBytes(buffer, value);
+      return instream.ReadLittleEndian32FromBytes(buffer, value);
     }
     if(T == Type.TYPE_FIXED64) {
-      return CodedInputStream::ReadLittleEndian64FromBytes(buffer, value);
+      return instream.ReadLittleEndian64FromBytes(buffer, value);
     }
     if(T == Type.TYPE_SFIXED32) {
       uint tmp;
-      buffer = CodedInputStream::ReadLittleEndian32FromBytes(buffer, value);
+      buffer = instream.ReadLittleEndian32FromBytes(buffer, value);
       value = cast(int)tmp;
     }
     if(T == Type.TYPE_SFIXED64) {
       ulong tmp;
-      buffer = CodedInputStream::ReadLittleEndian64FromBytes(buffer, value);
+      buffer = instream.ReadLittleEndian64FromBytes(buffer, value);
       value = cast(long)tmp;
     }
     if(T == Type.TYPE_FLOAT) {
       uint tmp;
-      buffer = CodedInputStream::ReadLittleEndian32FromBytes(buffer, value);
+      buffer = instream.ReadLittleEndian32FromBytes(buffer, value);
       value = DecodeFloat(tmp);
     }
     if(T == Type.TYPE_DOUBLE) {
       ulong tmp;
-      buffer = CodedInputStream::ReadLittleEndian64FromBytes(buffer, value);
+      buffer = instream.ReadLittleEndian64FromBytes(buffer, value);
       value = DecodeDouble(tmp);
     }
     return buffer;
@@ -215,7 +217,7 @@ class WireFormatLite
    */
   static void WriteTag(int field_number, WireType type, ref CodedOutputStream output)
   {
-    ouput.WriteTag(MakeTag(field_number, type));
+    output.WriteTag(MakeTag(field_number, type));
   }
   static void WriteInt32NoTag(int value, ref CodedOutputStream output)
   {
@@ -288,207 +290,207 @@ class WireFormatLite
   /*
    * direct to bytes string
    */
-  static byte[] WriteTagToBytes(int field_number, WireType type, ref byte[] target)
+  byte* WriteTagToBytes(int field_number, WireType type, byte* target)
   {
-    return CodedOutputStream::WriteTagToBytes(MakeTag(field_number, type), target);
-  }
-  static byte[] WriteInt32NoTagToBytes(int value,ref byte[] target)
+    return this.outstream.WriteTagToBytes(MakeTag(field_number, type), target);
+  } 
+  byte* WriteInt32NoTagToBytes(int value,byte* target)
   {
-    return CodedOutputStream::WriteVarint32SignExtendedToBytes(value, target);
+    return this.outstream.WriteVarint32SignExtendedToBytes(value, target);
   }
-  static byte[] WriteInt64NoTagToBytes(long value,ref byte[] target)
+  byte* WriteInt64NoTagToBytes(long value,byte* target)
   {
-    return CodedOutputStream::WriteVarint64ToBytes(value, target);
+    return this.outstream.WriteVarint64ToBytes(value, target);
   }
-  static byte[] WriteUInt32NoTagToBytes(uint value,ref byte[] target)
+  byte* WriteUInt32NoTagToBytes(uint value,byte* target)
   {
-    return CodedOutputStream::WriteVarint32ToBytes(value, target);
+    return this.outstream.WriteVarint32ToBytes(value, target);
   }
-  static byte[] WriteUInt64NoTagToBytes(ulong value,ref byte[] target)
+  byte* WriteUInt64NoTagToBytes(ulong value,byte* target)
   {
-    return CodedOutputStream::WriteVarint64ToBytes(value, target);
+    return this.outstream.WriteVarint64ToBytes(value, target);
   }
-  static byte[] WriteSInt32NoTagToBytes(int value,ref byte[] target)
+  byte* WriteSInt32NoTagToBytes(int value,byte* target)
   {
-    return CodedOutputStream::WriteVarint32ToBytes(ZigZagEncode32(value), target);
+    return this.outstream.WriteVarint32ToBytes(ZigZagEncode32(value), target);
   }
-  static byte[] WriteSInt64NoTagToBytes(long value,ref byte[] target)
+  byte* WriteSInt64NoTagToBytes(long value,byte* target)
   {
-    return CodedOutputStream::WriteVarint64ToBytes(ZigZagEncode64(value), target);
+    return this.outstream.WriteVarint64ToBytes(ZigZagEncode64(value), target);
   }
-  static byte[] WriteFixed32NoTagToBytes(uint value,ref byte[] target)
+  byte* WriteFixed32NoTagToBytes(uint value,byte* target)
   {
-    return CodedOutputStream::WriteLittleEndian32ToBytes(value, target);
+    return this.outstream.WriteLittleEndian32ToBytes(value, target);
   }
-  static byte[] WriteFixed64NoTagToBytes(ulong value,ref byte[] target)
+  byte* WriteFixed64NoTagToBytes(ulong value,byte* target)
   {
-    return CodedOutputStream::WriteLittleEndian64ToBytes(value, target);
+    return this.outstream.WriteLittleEndian64ToBytes(value, target);
   }
-  static byte[] WriteSFixed32NoTagToBytes(int value,ref byte[] target)
+  byte* WriteSFixed32NoTagToBytes(int value,byte* target)
   {
-    return CodedOutputStream::WriteLittleEndian32ToBytes(cast(uint)value, target);
+    return this.outstream.WriteLittleEndian32ToBytes(cast(uint)value, target);
   }
-  static byte[] WriteSFixed64NoTagToBytes(long value,ref byte[] target)
+  byte* WriteSFixed64NoTagToBytes(long value,byte* target)
   {
-    return CodedOutputStream::WriteLittleEndian64ToBytes(cast(ulong)value, target);
+    return this.outstream.WriteLittleEndian64ToBytes(cast(ulong)value, target);
   }
-  static byte[] WriteFloatNoTagToBytes(float value, ref byte[] target)
+  byte* WriteFloatNoTagToBytes(float value, byte* target)
   {
-    return CodedOutputStream::WriteLittleEndian32ToBytes(EncodeFloat(value), target);
+    return this.outstream.WriteLittleEndian32ToBytes(EncodeFloat(value), target);
   }
-  static byte[] WriteDoubleNoTagToBytes(double value, ref byte[] target)
+  byte* WriteDoubleNoTagToBytes(double value, byte* target)
   {
-    return CodedOutputStream::WriteLittleEndian64ToBytes(EncodeDouble(value), target);
+    return this.outstream.WriteLittleEndian64ToBytes(EncodeDouble(value), target);
   }
-  static byte[] WriteBoolNoTagToBytes(bool value, ref byte[] target)
+  byte* WriteBoolNoTagToBytes(bool value, byte* target)
   {
-    return CodedOutputStream::WriteVarint32ToBytes(value ? 1:0, target);
+    return this.outstream.WriteVarint32ToBytes(value ? 1:0, target);
   }
-  static byte[] WriteEnumNoTagToBytes(int value, ref byte[] target)
+  byte* WriteEnumNoTagToBytes(int value, byte* target)
   {
-    return CodedOutputStream::WriteVarint32SignExtendedToBytes(value, target);
+    return this.outstream.WriteVarint32SignExtendedToBytes(value, target);
   }
-  byte[] WriteInt32ToBytes(int field_number, int value, ref byte[] target)
+  byte* WriteInt32ToBytes(int field_number, int value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_VARINT, target);
     return WriteInt32NoTagToBytes(value, target);
   }
-  byte[] WriteInt64ToBytes(int field_number, long value, ref byte[] target)
+  byte* WriteInt64ToBytes(int field_number, long value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_VARINT, target);
     return WriteInt64NoTagToBytes(value, target);
   }
-  byte[] WriteUInt32ToBytes(int field_number, uint value, ref byte[] target)
+  byte* WriteUInt32ToBytes(int field_number, uint value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_VARINT, target);
     return WriteUInt32NoTagToBytes(value, target);
   }
-  byte[] WriteUInt64ToBytes(int field_number, ulong value, ref byte[] target)
+  byte* WriteUInt64ToBytes(int field_number, ulong value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_VARINT, target);
     return WriteUInt64NoTagToBytes(value, target);
   }
-  byte[] WriteSInt32ToBytes(int field_number, int value, ref byte[] target)
+  byte* WriteSInt32ToBytes(int field_number, int value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_VARINT, target);
     return WriteSInt32NoTagToBytes(value, target);
   }
-  byte[] WriteSInt64ToBytes(int field_number, long value, ref byte[] target)
+  byte* WriteSInt64ToBytes(int field_number, long value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_VARINT, target);
     return WriteSInt64NoTagToBytes(value, target);
   }
-  byte[] WriteFixed32ToBytes(int field_number, uint value, ref byte[] target)
+  byte* WriteFixed32ToBytes(int field_number, uint value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_FIXED32, target);
     return WriteFixed32NoTagToBytes(value, target);
   }
-  byte[] WriteFixed64ToBytes(int field_number, ulong value, ref byte[] target)
+  byte* WriteFixed64ToBytes(int field_number, ulong value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_FIXED64, target);
     return WriteFixed64NoTagToBytes(value, target);
   }
-  byte[] WriteSFixed32ToBytes(int field_number, int value, ref byte[] target)
+  byte* WriteSFixed32ToBytes(int field_number, int value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_FIXED32, target);
     return WriteSFixed32NoTagToBytes(value, target);
   }
-  byte[] WriteSFixed64ToBytes(int field_number, long value, ref byte[] target)
+  byte* WriteSFixed64ToBytes(int field_number, long value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_FIXED64, target);
     return WriteSFixed64NoTagToBytes(value, target);
   }
-  byte[] WriteFloatToBytes(int field_number, float value, ref byte[] target)
+  byte* WriteFloatToBytes(int field_number, float value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_FIXED32, target);
     return WriteFloatNoTagToBytes(value,target);
   }
-  byte[] WriteDoubleToBytes(int field_number, double value, ref byte[] target)
+  byte* WriteDoubleToBytes(int field_number, double value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_FIXED64, target);
     return WriteDoubleNoTagToBytes(value, target);
   }
-  byte[] WriteBoolToBytes(int field_number, bool value, ref byte[] target)
+  byte* WriteBoolToBytes(int field_number, bool value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_VARINT, target);
     return WriteBoolNoTagToBytes(value, target);
   }
-  byte[] WriteEnumToBytes(int field_number, int value, ref byte[] target)
+  byte* WriteEnumToBytes(int field_number, int value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_VARINT, target);
     return WriteEnumNoTagToBytes(value, target);
   }
-  byte[] WriteStringToBytes(int field_number, char[] value, ref byte[] target)
+  byte* WriteStringToBytes(int field_number, char[] value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, target);
-    target = CodedOutputStream::WriteVarint32ToBytes(value.length, target);
-    return CodedOutputStream::WriteStringToBytes(value, target);
+    target = outstream.WriteVarint32ToBytes(value.length, target);
+    return this.outstream.WriteStringToBytes(value, target);
   }
-  byte[] WriteBytesToBytes(int field_number, byte[] value, ref byte[] target)
+  byte* WriteBytesToBytes(int field_number, byte[] value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, target);
-    target = CodedOutputStream::WriteVarint32ToBytes(value.length, target);
-    return CodedOutputStream::WriteStringToBytes(value, target);
+    target = outstream.WriteVarint32ToBytes(value.length, target);
+    return this.outstream.WriteStringToBytes(cast(char[])value, target);
   }
-  byte[] WriteGroupToBytes(int field_number, MessageLite value, ref byte[] target)
+  byte* WriteGroupToBytes(int field_number, MessageLite value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_START_GROUP, target);
-    target = value.SerializeWithCachedSizesToArray(target);
+    target = value.SerializeWithCachedSizesToBytes(target);
     return WriteTagToBytes(field_number, WireType.WIRETYPE_END_GROUP, target);
   }
-  byte[] WriteMessageToBytes(int field_number, MessageLite value, ref byte[] target)
+  byte* WriteMessageToBytes(int field_number, MessageLite value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, target);
-    target = CodedOutputStream::WriteVarint32ToBytes(value.GetCachedSize(), target);
-    return  value.SerializeWithCachedSizesToArray(target);
+    target = outstream.WriteVarint32ToBytes(value.GetCachedSize(), target);
+    return  value.SerializeWithCachedSizesToBytes(target);
   }
-  byte[] WriteGroupNoVirtualToBytes(MessageType)(int field_number, MessageType value, ref byte[] target)
+  byte* WriteGroupNoVirtualToBytes(MessageType)(int field_number, MessageType value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_START_GROUP, target);
     target = (cast(MessageType)value).SerializeWithCachedSizesToBytes(target);
     return WriteTagToBytes(field_number, WireType.WIRETYPE_END_GROUP, target);
   }
-  byte[] WriteMessageNoVirtualToBytes(MessageType)(int field_number, MessageType value, ref byte[] target)
+  byte* WriteMessageNoVirtualToBytes(MessageType)(int field_number, MessageType value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, target);
-    target = CodedOutputStream::WriteVarint32ToBytes((cast(MessageType)value).GetCachedSize(), target);
+    target = outstream.WriteVarint32ToBytes((cast(MessageType)value).GetCachedSize(), target);
     return  (cast(MessageType)value).SerializeWithCachedSizesToBytes(target);
   }
   int Int32Size(int value)
   {
-    return CodedOutputStream::VarintSize32SignExtended(value);
+    return this.outstream.VarintSize32SignExtended(value);
   }
-  int Int64Size(loong value)
+  int Int64Size(long value)
   {
-    return CodedOutputStream::VarintSize64(cast(ulong)value);
+    return this.outstream.VarintSize64(cast(ulong)value);
   }
   int UInt32Size(uint value)
   {
-    return CodedOutputStream::VarintSize32(value);
+    return this.outstream.VarintSize32(value);
   }
   int UInt64Size(ulong value)
   {
-    return CodedOutputStream::VarintSize64(value);
+    return this.outstream.VarintSize64(value);
   }
   int SInt32Size(int value)
   {
-    return CodedOutputStream::VarintSize32(ZigZagEncode32(value));
+    return this.outstream.VarintSize32(ZigZagEncode32(value));
   }
   int SInt64Size(long value)
   {
-    return CodedOutputStream::VarintSize64(ZigZagEncode64(value));
+    return this.outstream.VarintSize64(ZigZagEncode64(value));
   }
   int EnumSize(int value)
   {
-    return CodedOutputStream::VarintSize32SignExtended(value);
+    return this.outstream.VarintSize32SignExtended(value);
   }
   int StringSize(char[] value)
   {
-    return CodedOutputStream::VarintSize32(value.length) + value.length;
+    return this.outstream.VarintSize32(value.length) + value.length;
   }
   int BytesSize(char[] value)
   {
-    return CodedOutputStream::VarintSize32(value.length) + value.length;
+    return this.outstream.VarintSize32(value.length) + value.length;
   }
   int GroupSize(MessageLite value)
   {
@@ -497,7 +499,7 @@ class WireFormatLite
   int MessageSize(MessageLite value)
   {
     int size = value.ByteSize();
-    return CodedOutputStream::VarintSize32(size) + size;
+    return this.outstream.VarintSize32(size) + size;
   }
   int GroupNoVirTualSize(MessageType)(MessageType value)
   {
@@ -506,6 +508,14 @@ class WireFormatLite
   int MessageNoVirTualSize(MessageType)(MessageType value)
   {
     int size = (cast(MessageType)value).ByteSize();
-    return CodedOutputStream::VarintSize32(size) + size;
+    return this.outstream.VarintSize32(size) + size;
   }
+  this()
+  {
+    outstream = new CodedOutputStream;
+    instream = new CodedInputStream;
+  }
+ private:
+  CodedOutputStream outstream;
+  CodedInputStream instream;
 }
