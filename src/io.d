@@ -3,12 +3,13 @@ module io;
 private import commen;
 private import tango.io.device.File;
 private import tango.net.device.Socket;
+private import tango.stdc.string;
 private alias char[] string;
 class ZeroCopyInputStream
 {
   File zfd;
   Socket zsd;
-  int delegate(ref byte* buffer, size_t size) callbackread;
+  size_t delegate(ref byte[] buffer, size_t size) callbackread;
   enum StreamType {
     FILE    = 1,
     SOCKET  = 2,
@@ -29,12 +30,10 @@ class ZeroCopyInputStream
     callbackread = &ReadCache;
     mode = StreamType.SOCKET;
   }
-  int ReadCache(ref byte[] buffer, size_t size)
+  size_t ReadCache(ref byte[] buffer, size_t size)
   {
-    void[]  dst;
-    size_t  i,
-        len,
-        chunk;
+    byte[]  dst;
+    size_t  i, len, chunk;
     
     if (size != -1) {
       chunk = size;
@@ -53,7 +52,6 @@ class ZeroCopyInputStream
       }
       len += i;
     }
-    
     buffer ~= dst;
     // raw_stream.seek(off_size);
     // buffer = (zfd.load(size)).ptr;
@@ -65,7 +63,7 @@ class CodedInputStream
   this(ZeroCopyInputStream* coded_input)
   {
     this.coded_raw = coded_input;
-    input = coded_input.ptr;
+    input = coded_stream.ptr;
     SetCache();
   }
   void SetCache(size_t size = 1024)
@@ -85,12 +83,12 @@ class CodedInputStream
     }
     return true;
   }
-  bool Refresh(size_t size = cache_size)
+  bool Refresh()
   {
-    buffer_size = coded_raw.callbackread(coded_stream, size);
-    if(buffer_size == size) {
+    buffer_size = coded_raw.callbackread(coded_stream, cache_size);
+    if(buffer_size == cache_size) {
       TotalBytes = coded_stream.length;
-      buffer_end = coded_stream[length - 1].ptr;
+      buffer_end = coded_stream.ptr + coded_stream.length;
       if(TotalBytes > DefaultTotalBytesWarningThreshold) {
         if(TotalBytes > DefaultTotalBytesLimit) {
           throw new Exception("Reatch Recursion limit.");
@@ -121,14 +119,17 @@ class CodedInputStream
   }
   bool ReadString(ref char[] buffer, int size)
   {
-    if(ReadRaw((byte[])buffer,size)) {
-      return true;
+    if(BufferSize() < size) {
+      if(!Refresh()) return false;
     }
-    return false;
+    memcpy(&buffer, input, size);
+    input += size;
+    return true;
   }
   bool ReadLittleEndian32(ref uint value)
   {
-    byte[value.sizeof] bytes;
+    byte[] bytes;
+    bytes.length = value.sizeof;
     if(BufferSize() > value.sizeof) {
       memcpy(&bytes, input, value.sizeof);
       input += value.sizeof;
@@ -136,12 +137,13 @@ class CodedInputStream
       if (ReadRaw(bytes, value.sizeof))
         return false;
     }
-    ReadLittleEndian32FromBytes(bytes, value);
+    ReadLittleEndian32FromBytes(bytes.ptr, value);
     return true;
   }
   bool ReadLittleEndian64(ref ulong value)
   {
-    byte[value.sizeof] bytes;
+    byte[] bytes;
+    bytes.length = value.sizeof;
     if(BufferSize() > value.sizeof) {
       memcpy(&bytes, input, value.sizeof);
       input += value.sizeof;
@@ -149,7 +151,7 @@ class CodedInputStream
       if (ReadRaw(bytes, value.sizeof))
         return false;
     }
-    ReadLittleEndian64FromBytes(bytes, value);
+    ReadLittleEndian64FromBytes(bytes.ptr, value);
     return true;
   }
   bool ReadVarint32(ref uint value)
@@ -261,11 +263,11 @@ class CodedInputStream
   }
   byte* ReadVarint32FromBytes(byte* buffer, ref uint value)
   {
-    return Readvarintfrombytes!(uint)(buffer, value);
+    return ReadVarintFromBytes!(uint)(buffer, value);
   }
-  byte* ReadVarint32FromBytes(byte* buffer, ref uint value)
+  byte* ReadVarint64FromBytes(byte* buffer, ref ulong value)
   {
-    return Readvarintfrombytes!(ulong)(buffer, value);
+    return ReadVarintFromBytes!(ulong)(buffer, value);
   }
   byte* ReadVarintFromBytes(T)(byte* buffer, ref T value)
   {
@@ -279,7 +281,7 @@ class CodedInputStream
         value |= (cast(T)(*buffer & 0x7F)) << (7*i);
       }
       i++;
-      if(!(buffer & 0x80)) {
+      if(!(*buffer & 0x80)) {
         if(i > MaxVarintBytes)
           throw new Exception("Data corrupt");
         return buffer + 1;
@@ -308,6 +310,7 @@ class CodedInputStream
   }
   int BytesUntilLimit()
   {
+    return 0;
   }
   void SetTotalBytesLimit(int total_bytes_limit, int warning_threshold)
   {
@@ -317,7 +320,7 @@ class CodedInputStream
     return buffer_end - input;
   }
  private:
-  ZeroCopyInputStream coded_raw;
+  ZeroCopyInputStream* coded_raw;
   byte* input;
   byte[] coded_stream;
   byte* buffer_end;
@@ -375,7 +378,7 @@ class CodedOutputStream
   {
     try{
       coded_stream ~= new byte[block_size];
-      buffer_end = coded_stream[length - 1].ptr;
+      buffer_end = coded_stream.ptr + coded_stream.length;
     }
     catch(Exception e ) {
       return false;
@@ -399,7 +402,7 @@ class CodedOutputStream
   }
   void WriteVarint64(ulong value)
   {
-    if(BufferSize() >= MaxVarint64Bytes) {
+    if(BufferSize() >= MaxVarintBytes) {
       WriteVarint64Fast(value);
     } else {
       WriteVarint!(ulong)(value);
@@ -740,7 +743,7 @@ class CodedOutputStream
         return 5;
       }
     } else {
-      if (value < (1ull << 42)) {
+      if (value < (1L << 42)) {
         return 6;
       } else if (value < (cast(ulong)1 << 49)) {
         return 7;
