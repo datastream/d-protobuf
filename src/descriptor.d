@@ -4,8 +4,8 @@ private import tango.io.Stdout;
 private import tango.util.Convert;
 private import tango.text.Util;
 private import tango.stdc.posix.stdlib;
-import prototype;
-
+private import prototype;
+private import commen;
 private alias char[] string;
 
 class DescriptorPool
@@ -617,13 +617,13 @@ class FieldDescriptor
     }
     void FixFieldType()
     {
-        if(field_type_ == Type.MAX_TYPE)
+        if(field_type_ == FieldType.MAX_TYPE)
         {
             Descriptor tmp;
             tmp = FindMessageType();
             if(tmp)
             {
-                field_type_ = StringToType("message");
+                field_type_ = StringToFieldType("message");
                 if(has_default_value())
                     throw new Exception("message type can't set default value "~default_value_string_);
                 return;
@@ -634,7 +634,7 @@ class FieldDescriptor
                 tmp2 = FindEnumType();
                 if(tmp2)
                 {
-                    field_type_ = StringToType("enum");
+                    field_type_ = StringToFieldType("enum");
                     if(has_default_value())
                         setdefaultvalue(default_value_string_);
                     return;
@@ -666,7 +666,7 @@ class FieldDescriptor
     {
         field_label_ = label;
     }
-    void set_type(Type tp)
+    void set_type(FieldType tp)
     {
         field_type_ = tp;
     }
@@ -722,7 +722,7 @@ class FieldDescriptor
     {
         return field_label_;
     }
-    Type type()
+    FieldType type()
     {
         return field_type_;
     }
@@ -943,7 +943,7 @@ class FieldDescriptor
     }
 private:
     Label field_label_;  //requried options
-    Type field_type_;    //data type
+    FieldType field_type_;    //data type
     string field_name_;  //var name
     string full_name_;  //full var name
     int field_number_;   //index of field in defined message

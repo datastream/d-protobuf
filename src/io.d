@@ -5,10 +5,13 @@ private import tango.io.device.File;
 private import tango.net.device.Socket;
 private import tango.stdc.string;
 private alias char[] string;
+
 class ZeroCopyInputStream
 {
   File zfd;
   Socket zsd;
+  byte* buffer;
+  size_t buffer_length;
   size_t delegate(ref byte[] buffer, size_t size) callbackread;
   enum StreamType {
     FILE    = 1,
@@ -30,27 +33,52 @@ class ZeroCopyInputStream
     callbackread = &ReadCache;
     mode = StreamType.SOCKET;
   }
+  this(byte[] buffer)
+  {
+    this.buffer = buffer.ptr;
+    this.buffer_length = buffer.length;
+    mode = StreamType.BUFFER;
+  }
   size_t ReadCache(ref byte[] buffer, size_t size)
   {
     byte[]  dst;
     size_t  i, len, chunk;
-    
-    if (size != -1) {
-      chunk = size;
-    } else {
-      chunk = zfd.conduit.bufferSize;
-    }
-    
-    while (len < size)
-    {
-      if (dst.length - len is 0)
-        dst.length = len + chunk;
-      
-      if (( i = zfd.read (dst[len .. $])) is zfd.Eof){
-        len += i;
-        break;
+    if(mode == StreamType.FILE) {
+      if (size != -1) {
+        chunk = size;
+      } else {
+        chunk = zfd.conduit.bufferSize;
       }
-      len += i;
+      
+      while (len < size)
+      {
+        if (dst.length - len is 0)
+          dst.length = len + chunk;
+        
+        if (( i = zfd.read (dst[len .. $])) is zfd.Eof){
+          len += i;
+          break;
+        }
+        len += i;
+      }
+    } else if(mode == StreamType.SOCKET) {
+      if (size != -1) {
+        chunk = size;
+      } else {
+        chunk = zfd.conduit.bufferSize;
+      }
+      
+      while (len < size)
+      {
+        if (dst.length - len is 0)
+          dst.length = len + chunk;
+        
+        if (( i = zfd.read (dst[len .. $])) is zfd.Eof){
+          len += i;
+          break;
+        }
+        len += i;
+      }      
     }
     buffer ~= dst;
     // raw_stream.seek(off_size);
@@ -65,6 +93,10 @@ class CodedInputStream
     this.coded_raw = coded_input;
     input = coded_stream.ptr;
     SetCache();
+    if(coded_raw.mode == coded_raw.StreamType.BUFFER) {
+      input = coded_raw.buffer;
+      buffer_end = input + coded_raw.buffer_length;
+    }
   }
   this()
   {
@@ -89,6 +121,8 @@ class CodedInputStream
   }
   bool Refresh()
   {
+    if(coded_raw.mode == coded_raw.StreamType.BUFFER)
+      return false;
     buffer_size = coded_raw.callbackread(coded_stream, cache_size);
     if(buffer_size == cache_size) {
       TotalBytes = coded_stream.length;
@@ -111,6 +145,10 @@ class CodedInputStream
     buffer = input;
     size = BufferSize();
     return true;
+  }
+  byte* GetCurBufferPointer()
+  {
+    return input;
   }
   bool ReadRaw(ref byte[] buffer, int size)
   {
@@ -279,7 +317,7 @@ class CodedInputStream
     uint bits = MaxVarintBytes;
     if(uint.sizeof == T.sizeof)
       bits = MaxVarint32Bytes;
-    while(BufferSize() > 0)
+    while(!(buffer is null))
     {
       if(i < bits) {
         value |= (cast(T)(*buffer & 0x7F)) << (7*i);
@@ -721,7 +759,7 @@ class CodedOutputStream
   /*
    * function for bytes size
    */
-  int VarintSize32(uint value)
+  uint VarintSize32(uint value)
   {
     if (value < (1 << 7)) {
       return 1;
@@ -735,7 +773,7 @@ class CodedOutputStream
       return 5;
     }
   }
-  int VarintSize64(ulong value)
+  uint VarintSize64(ulong value)
   {
     if (value < (cast(ulong)1 << 35)) {
       if (value < (cast(ulong)1 << 7)) {
@@ -763,7 +801,7 @@ class CodedOutputStream
       }
     }
   }
-  int VarintSize32SignExtended(int value)
+  uint VarintSize32SignExtended(int value)
   {
     if(value < 0) {
       return VarintSize64(value);
@@ -772,7 +810,7 @@ class CodedOutputStream
       return VarintSize32(value);
     }
   }
-  int ByteCount()
+  uint ByteCount()
   {
     return output - coded_stream.ptr;
   }

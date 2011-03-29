@@ -6,6 +6,7 @@ import AST;
 import descriptor;
 import preprocessor;
 import prototype;
+private import commen;
 
 private alias char[] string;
 
@@ -241,21 +242,21 @@ class Analysis
             if(this.is_extend)
                 if(this.root_block)
                 {
-                    this.root_block.last_extension().set_type(StringToType(stat.type));
-                    if(StringToType(stat.type) == Type.MAX_TYPE)
+                    this.root_block.last_extension().set_type(StringToFieldType(stat.type));
+                    if(StringToFieldType(stat.type) == FieldType.MAX_TYPE)
                         this.root_block.last_extension().set_msg_enum(stat.type);
                 }
                 else
                 {
-                    this.filedescriptor.last_extension().set_type(StringToType(stat.type));
-                    if(StringToType(stat.type) == Type.MAX_TYPE)
+                    this.filedescriptor.last_extension().set_type(StringToFieldType(stat.type));
+                    if(StringToFieldType(stat.type) == FieldType.MAX_TYPE)
                         this.filedescriptor.last_extension().set_msg_enum(stat.type);
                     
                 }
             else
             {
-                this.root_block.last_field().set_type(StringToType(stat.type));
-                if(StringToType(stat.type) == Type.MAX_TYPE)
+                this.root_block.last_field().set_type(StringToFieldType(stat.type));
+                if(StringToFieldType(stat.type) == FieldType.MAX_TYPE)
                     this.root_block.last_field().set_msg_enum(stat.type);
             }
             this.ASTTree = stat.nStmt;

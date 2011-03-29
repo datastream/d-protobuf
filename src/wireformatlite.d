@@ -1,20 +1,11 @@
 private import tango.io.Stdout;
-private import commen;
+private import prototype;
 private import io;
 private import messagelite;
 
 
 private alias char[] string;
 
-struct ExtensionIdentifier(T,V)
-{
-  bool repeated_;
-  Type type_;
-  int number_;
-  bool packed_;
-  T value_;
-  V v_type_;
-}
 class WireFormatLite
 {
   static const WireType[FieldType] WireTypeForFieldType;
@@ -74,103 +65,107 @@ class WireFormatLite
   /*
    * Read functions
    */
-  bool ReadPrimitive(V, T)(CodedInputStream input, ref V value)
+  int GetTagFieldNumber(uint tag)
   {
-    if(T == Type.TYPE_INT32) {
+    return cast(int) (tag >> TagTypeBits);
+  }
+  WireType GetTagWireType(uint tag)
+  {
+    return cast(WireType) (tag & TagTypeMask);
+  }
+  bool ReadPrimitive(V)(CodedInputStream input, ref V value, FieldType type)
+  {
+    if(type == FieldType.TYPE_INT32) {
       uint tmp;
       if(!input.ReadVarint32(tmp)) return false;
-      value = cast(int)tmp;
+      value = cast(V)tmp;
     }
-    if(T == Type.TYPE_INT64) {
-      long tmp;
+    if(type == FieldType.TYPE_INT64) {
+      ulong tmp;
       if(!input.ReadVarint64(tmp)) return false;
-      value = cast(long)tmp;      
+      value = cast(V)tmp;
     }
-    if(T == Type.TYPE_UINT32) {
-      return input.ReadVarint32(value);
+    if(type == FieldType.TYPE_UINT32) {
+      uint tmp;
+      if(!input.ReadVarint32(tmp)) return false;
+      value = cast(V)tmp;
     }
-    if(T == Type.TYPE_UINT64) {
-      return input.ReadVarint64(value);
+    if(type == FieldType.TYPE_UINT64) {
+      ulong tmp;
+      if(!input.ReadVarint64(tmp)) return false;
+      value = cast(V)tmp;
     }
-    if(T == Type.TYPE_SINT32) {
+    if(type == FieldType.TYPE_SINT32) {
       uint tmp;
       if(!input.ReadVarint32(tmp)) return false;
       value = ZigZagDecode32(tmp);
     }
-    if(T == Type.TYPE_SINT64) {
+    if(type == FieldType.TYPE_SINT64) {
       ulong tmp;
       if(!input.ReadVarint64(tmp)) return false;
       value = ZigZagDecode64(tmp);
     }
-    if(T == Type.TYPE_FIXED32) {
-      return input.ReadLittleEndian32(value);
-    }
-    if(T == Type.TYPE_FIXED64) {
-      return input.ReadLittleEndian64(value);
-    }
-    if(T == Type.TYPE_SFIXED32) {
+    if(type == FieldType.TYPE_FIXED32) {
       uint tmp;
       if(!input.ReadLittleEndian32(tmp)) return false;
-      value = cast(int)tmp;
+      value = cast(V)tmp;
     }
-    if(T == Type.TYPE_SFIXED64) {
+    if(type == FieldType.TYPE_FIXED64) {
       ulong tmp;
       if(!input.ReadLittleEndian64(tmp)) return false;
-      value = cast(long)tmp;
+      value = cast(V)tmp;
     }
-    if(T == Type.TYPE_FLOAT) {
+    if(type == FieldType.TYPE_SFIXED32) {
+      uint tmp;
+      if(!input.ReadLittleEndian32(tmp)) return false;
+      value = cast(V)tmp;
+    }
+    if(type == FieldType.TYPE_SFIXED64) {
+      ulong tmp;
+      if(!input.ReadLittleEndian64(tmp)) return false;
+      value = cast(V)tmp;
+    }
+    if(type == FieldType.TYPE_FLOAT) {
       uint tmp;
       if(!input.ReadVarint32(tmp)) return false;
-      value = DecodeFloat(tmp);
+      value = cast(V)DecodeFloat(tmp);
     }
-    if(T == Type.TYPE_DOUBLE) {
+    if(type == FieldType.TYPE_DOUBLE) {
       ulong tmp;
       if(!input.ReadVarint64(tmp)) return false;
-      value = DecodeDouble(tmp);
+      value = cast(V)DecodeDouble(tmp);
     }
-    if(T == Type.TYPE_BOOL) {
+    if(type == FieldType.TYPE_BOOL) {
       uint tmp;
       if(!input.ReadVarint32(tmp)) return false;
       value = (tmp != 0);
     }
-    if(T == Type.TYPE_ENUM) {
+    if(type == FieldType.TYPE_ENUM) {
       uint tmp;
       if(!input.ReadVarint32(tmp)) return false;
-      value = cast(int)tmp;
+      value = cast(V)tmp;
     }
     return true;
   }
-  bool ReadRepeatedPrimitive(V, T)(uint tag_size, uint tag, ref CodedInputStream input, ref RepaetedField!(V) values)
+  /*
+  bool ReadRepeatedFixedSizePrimitive(V, T)(uint tag_size, uint tag, ref CodedInputStream input, ref V[] values)
   {
-    V value;
-    if(!ReadPrimitive!(V, T)(input, value)) return false;
-    values.Add(value);
-    size_t elements_already_reserved = values.Capacity() - value.size();
-    while(elements_already_reserved > 0 && ExpectTag(tag))
-    {
+   
+      V value;
+      if(Uint32size(tag) == tag_size) {
       if(!ReadPrimitive!(V, T)(input, value)) return false;
-      values.AddAlreadyReserved(value);
-      elements_already_reserved --;
-    }
-    return true;
-  }
-  bppl ReadRepeatedFixedSizePrimitive(V, T)(uint tag_size, uint tag, ref CodedInputStream input, ref RepaetedField!(V) values)
-  {
-    V value;
-    if(Uint32size(tag) == tag_size) {
-      if(!ReadPrimitive!(V, T)(input, value)) return false;
-      values.Add(value);
+      values ~= value;
       uint size;
       byte* buffer;
       input.GetDirectBufferPointer(buffer, size);
       if(size > 0) {
-        uint per_size = tar_size + value.sizeof;
-        int elements_num = min(values.Capacity() - values.size(), size/per_size);
+        uint per_size = tag_size + value.sizeof;
+        int elements_num = size/per_size;
         int read_num = 0;
         while(read_num < elements_num && ExpectTagFromBytes(buffer, tag))
         {
           buffer = ReadPrimitiveFromBytes!(V, T)(buffer, value);
-          values.AddAlreadyReserved(value);
+          values ~= value;
           read_num ++;
         }
         input.Skip(read_num*per_size);
@@ -178,33 +173,35 @@ class WireFormatLite
     }
     return true;
   }
+  */
+  
   /*
    * Read function from bytes
    */
-  byte* ReadPrimitiveFromBytes(V, T)(byte* buffer, ref V value)
+  byte* ReadPrimitiveFromBytes(V)(byte* buffer, ref V value, FieldType type)
   {
-    if(T == Type.TYPE_FIXED32) {
+    if(type == FieldType.TYPE_FIXED32) {
       return instream.ReadLittleEndian32FromBytes(buffer, value);
     }
-    if(T == Type.TYPE_FIXED64) {
+    if(type == FieldType.TYPE_FIXED64) {
       return instream.ReadLittleEndian64FromBytes(buffer, value);
     }
-    if(T == Type.TYPE_SFIXED32) {
+    if(type == FieldType.TYPE_SFIXED32) {
       uint tmp;
       buffer = instream.ReadLittleEndian32FromBytes(buffer, value);
-      value = cast(int)tmp;
+      value = cast(V)tmp;
     }
-    if(T == Type.TYPE_SFIXED64) {
+    if(type == FieldType.TYPE_SFIXED64) {
       ulong tmp;
       buffer = instream.ReadLittleEndian64FromBytes(buffer, value);
-      value = cast(long)tmp;
+      value = cast(V)tmp;
     }
-    if(T == Type.TYPE_FLOAT) {
+    if(type == FieldType.TYPE_FLOAT) {
       uint tmp;
       buffer = instream.ReadLittleEndian32FromBytes(buffer, value);
       value = DecodeFloat(tmp);
     }
-    if(T == Type.TYPE_DOUBLE) {
+    if(type == FieldType.TYPE_DOUBLE) {
       ulong tmp;
       buffer = instream.ReadLittleEndian64FromBytes(buffer, value);
       value = DecodeDouble(tmp);
@@ -215,75 +212,178 @@ class WireFormatLite
    * Write functions
    *
    */
-  static void WriteTag(int field_number, WireType type, ref CodedOutputStream output)
+  void WriteTag(int field_number, WireType type, ref CodedOutputStream output)
   {
     output.WriteTag(MakeTag(field_number, type));
   }
-  static void WriteInt32NoTag(int value, ref CodedOutputStream output)
+  void WriteInt32(int field_number, int value, ref CodedOutputStream output)
+  {
+    WriteTag(field_number, WireType.WIRETYPE_VARINT, output);
+    output.WriteVarint32SignExtended(value);
+  }
+  void WriteInt64(int field_number, long value, ref CodedOutputStream output)
+  {
+    WriteTag(field_number, WireType.WIRETYPE_VARINT, output);
+    output.WriteVarint64(cast(ulong)value);
+  }
+  void WriteUInt32(int field_number, uint value, ref CodedOutputStream output)
+  {
+    WriteTag(field_number, WireType.WIRETYPE_VARINT, output);
+    output.WriteVarint32(value);
+  }
+  void WriteUInt64(int field_number, ulong value, ref CodedOutputStream output)
+  {
+    WriteTag(field_number, WireType.WIRETYPE_VARINT, output);
+    output.WriteVarint64(value);
+  }
+  void WriteSInt32(int field_number, int value, ref CodedOutputStream output)
+  {
+    WriteTag(field_number, WireType.WIRETYPE_VARINT, output);
+    output.WriteVarint32(ZigZagEncode32(value));
+  }
+  void WriteSInt64(int field_number, long value, ref CodedOutputStream output)
+  {
+    WriteTag(field_number, WireType.WIRETYPE_VARINT, output);
+    output.WriteVarint64(ZigZagEncode64(value));        
+  }
+  void WriteFixed32(int field_number, uint value, ref CodedOutputStream output)
+  {
+    WriteTag(field_number, WireType.WIRETYPE_VARINT, output);
+    output.WriteLittleEndian32(value);
+  }
+  void WriteFixed64(int field_number, ulong value, ref CodedOutputStream output)
+  {
+    WriteTag(field_number, WireType.WIRETYPE_VARINT, output);
+    output.WriteLittleEndian64(value);
+  }
+  void WriteSFixed32(int field_number, int value, ref CodedOutputStream output)
+  {
+    WriteTag(field_number, WireType.WIRETYPE_VARINT, output);
+    output.WriteLittleEndian32(cast(uint)value);
+  }
+  void WriteSFixed64(int field_number, long value, ref CodedOutputStream output)
+  {
+    WriteTag(field_number, WireType.WIRETYPE_VARINT, output);
+    output.WriteLittleEndian64(cast(ulong)value);
+  }
+  void WriteFloat(int field_number, float value, ref CodedOutputStream output)
+  {
+    WriteTag(field_number, WireType.WIRETYPE_VARINT, output);
+    output.WriteLittleEndian32(EncodeFloat(value));
+  }
+  void WriteDouble(int field_number, double value, ref CodedOutputStream output)
+  {
+    WriteTag(field_number, WireType.WIRETYPE_VARINT, output);
+    output.WriteLittleEndian64(EncodeDouble(value));
+  }
+  void WriteBool(int field_number, bool value, ref CodedOutputStream output)
+  {
+    WriteTag(field_number, WireType.WIRETYPE_VARINT, output);
+    output.WriteVarint32(value ? 1:0);
+  }
+  void WriteEnum(int field_number, int value, ref CodedOutputStream output)
+  {
+    WriteTag(field_number, WireType.WIRETYPE_VARINT, output);
+    output.WriteVarint32SignExtended(value);
+  }
+  void WriteGroup(int field_number, MessageLite value, ref CodedOutputStream output)
+  {
+    WriteTagToBytes(field_number, WireType.WIRETYPE_START_GROUP, output);
+    value.SerializeWithCachedSizes(output);
+    WriteTagToBytes(field_number, WireType.WIRETYPE_END_GROUP, output);
+  }
+  void WriteMessage(int field_number, MessageLite value, ref CodedOutputStream output)
+  {
+    WriteTagToBytes(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+    output.WriteVarint32(value.GetCachedSize(), output);
+    (cast(MessageType)value).SerializeWithCachedSizes(output);
+  }
+  void WriteGroupNoVirtual(MessageType)(int field_number, MessageType value, ref CodedOutputStream output)
+  {
+    WriteTagToBytes(field_number, WireType.WIRETYPE_START_GROUP, output);
+    (cast(MessageType)value).SerializeWithCachedSizes(output);
+    WriteTagToBytes(field_number, WireType.WIRETYPE_END_GROUP, output);
+  }
+  void WriteMessageNoVirtual(MessageType)(int field_number, MessageType value, ref CodedOutputStream output)
+  {
+    WriteTagToBytes(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+    output.WriteVarint32((cast(MessageType)value).GetCachedSize(), output);
+    (cast(MessageType)value).SerializeWithCachedSizes(output);
+  }
+  /*
+   * write values without tags, functions for codedoutoputstream
+   */
+  void WriteInt32NoTag(int value, ref CodedOutputStream output)
   {
     output.WriteVarint32SignExtended(value);
   }
-  static void WriteInt64NoTag(long value, ref CodedOutputStream output)
+  void WriteInt64NoTag(long value, ref CodedOutputStream output)
   {
     output.WriteVarint64(cast(ulong)value);
   }
-  static void WriteUInt32NoTag(uint value, ref CodedOutputStream output)
+  void WriteUInt32NoTag(uint value, ref CodedOutputStream output)
   {
     output.WriteVarint32(value);
   }
-  static void WriteUInt64NoTag(ulong value, ref CodedOutputStream output)
+  void WriteUInt64NoTag(ulong value, ref CodedOutputStream output)
   {
     output.WriteVarint64(value);
   }
-  static void WriteSInt32NoTag(int value, ref CodedOutputStream output)
+  void WriteSInt32NoTag(int value, ref CodedOutputStream output)
   {
     output.WriteVarint32(ZigZagEncode32(value));
   }
-  static void WriteSInt64NoTag(long value, ref CodedOutputStream output)
+  void WriteSInt64NoTag(long value, ref CodedOutputStream output)
   {
     output.WriteVarint64(ZigZagEncode64(value));        
   }
-  static void WriteFixed32NoTag(uint value, ref CodedOutputStream output)
+  void WriteFixed32NoTag(uint value, ref CodedOutputStream output)
   {
     output.WriteLittleEndian32(value);
   }
-  static void WriteFixed64NoTag(ulong value, ref CodedOutputStream output)
+  void WriteFixed64NoTag(ulong value, ref CodedOutputStream output)
   {
     output.WriteLittleEndian64(value);
   }
-  static void WriteSFixed32NoTag(int value, ref CodedOutputStream output)
+  void WriteSFixed32NoTag(int value, ref CodedOutputStream output)
   {
     output.WriteLittleEndian32(cast(uint)value);
   }
-  static void WriteSFixed64NoTag(long value, ref CodedOutputStream output)
+  void WriteSFixed64NoTag(long value, ref CodedOutputStream output)
   {
     output.WriteLittleEndian64(cast(ulong)value);
   }
-  static void WriteFloatNoTag(float value, ref CodedOutputStream output)
+  void WriteFloatNoTag(float value, ref CodedOutputStream output)
   {
     output.WriteLittleEndian32(EncodeFloat(value));
   }
-  static void WriteDoubleNoTag(double value, ref CodedOutputStream output)
+  void WriteDoubleNoTag(double value, ref CodedOutputStream output)
   {
     output.WriteLittleEndian64(EncodeDouble(value));
   }
-  static void WriteBoolNoTag(bool value, ref CodedOutputStream output)
+  void WriteBoolNoTag(bool value, ref CodedOutputStream output)
   {
     output.WriteVarint32(value ? 1:0);
   }
-  static void WriteEnumNoTag(int value, ref CodedOutputStream output)
+  void WriteEnumNoTag(int value, ref CodedOutputStream output)
   {
     output.WriteVarint32SignExtended(value);
   }
-  static void WriteGroupNoVirtualToBytes(MessageType)(int field_number, MessageType value, ref CodedOutputStream output)
+  void WriteGroupNoTag(MessageLite value, ref CodedOutputStream output)
   {
-    WriteTagToBytes(field_number, WireType.WIRETYPE_START_GROUP, output);
-    (cast(MessageType)value).SerializeWithCachedSizesToBytes(output);
-    WriteTagToBytes(field_number, WireType.WIRETYPE_END_GROUP, output);
+    value.SerializeWithCachedSizesToBytes(output);
   }
-  static void WriteMessageNoVirtualToBytes(MessageType)(int field_number, MessageType value, ref CodedOutputStream output)
+  void WriteMessageNoTag(MessageLite value, ref CodedOutputStream output)
   {
-    WriteTagToBytes(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+    output.WriteVarint32(value.GetCachedSize(), output);
+    value.SerializeWithCachedSizesToBytes(output);
+  }
+  void WriteGroupNoVirtualNoTag(MessageType)(MessageType value, ref CodedOutputStream output)
+  {
+    (cast(MessageType)value).SerializeWithCachedSizesToBytes(output);
+  }
+  void WriteMessageNoVirtualNoTag(MessageType)(MessageType value, ref CodedOutputStream output)
+  {
     output.WriteVarint32((cast(MessageType)value).GetCachedSize(), output);
     (cast(MessageType)value).SerializeWithCachedSizesToBytes(target);
   }
@@ -350,6 +450,28 @@ class WireFormatLite
   {
     return this.outstream.WriteVarint32SignExtendedToBytes(value, target);
   }
+  byte* WriteGroupNoTagToBytes(MessageLite value, byte* target)
+  {
+    return value.SerializeWithCachedSizesToBytes(target);
+  }
+  byte* WriteMessageNoTagToBytes(MessageLite value, byte* target)
+  {
+    target = outstream.WriteVarint32ToBytes(value.GetCachedSize(), target);
+    return  value.SerializeWithCachedSizesToBytes(target);
+  }
+  byte* WriteGroupNoVirtualNoTagToBytes(MessageType)(MessageType value, byte* target)
+  {
+    return (cast(MessageType)value).SerializeWithCachedSizesToBytes(target);
+  }
+  byte* WriteMessageNoVirtualNoTagToBytes(MessageType)(MessageType value, byte* target)
+  {
+    target = outstream.WriteVarint32ToBytes((cast(MessageType)value).GetCachedSize(), target);
+    return  (cast(MessageType)value).SerializeWithCachedSizesToBytes(target);
+  }
+
+  /*
+   * with tags
+   */
   byte* WriteInt32ToBytes(int field_number, int value, byte* target)
   {
     target = WriteTagToBytes(field_number, WireType.WIRETYPE_VARINT, target);
@@ -456,56 +578,56 @@ class WireFormatLite
     target = outstream.WriteVarint32ToBytes((cast(MessageType)value).GetCachedSize(), target);
     return  (cast(MessageType)value).SerializeWithCachedSizesToBytes(target);
   }
-  int Int32Size(int value)
+  uint Int32Size(int value)
   {
     return this.outstream.VarintSize32SignExtended(value);
   }
-  int Int64Size(long value)
+  uint Int64Size(long value)
   {
     return this.outstream.VarintSize64(cast(ulong)value);
   }
-  int UInt32Size(uint value)
+  uint UInt32Size(uint value)
   {
     return this.outstream.VarintSize32(value);
   }
-  int UInt64Size(ulong value)
+  uint UInt64Size(ulong value)
   {
     return this.outstream.VarintSize64(value);
   }
-  int SInt32Size(int value)
+  uint SInt32Size(int value)
   {
     return this.outstream.VarintSize32(ZigZagEncode32(value));
   }
-  int SInt64Size(long value)
+  uint SInt64Size(long value)
   {
     return this.outstream.VarintSize64(ZigZagEncode64(value));
   }
-  int EnumSize(int value)
+  uint EnumSize(int value)
   {
     return this.outstream.VarintSize32SignExtended(value);
   }
-  int StringSize(char[] value)
+  uint StringSize(char[] value)
   {
     return this.outstream.VarintSize32(value.length) + value.length;
   }
-  int BytesSize(char[] value)
+  uint BytesSize(char[] value)
   {
     return this.outstream.VarintSize32(value.length) + value.length;
   }
-  int GroupSize(MessageLite value)
+  uint GroupSize(MessageLite value)
   {
     return value.ByteSize();
   }
-  int MessageSize(MessageLite value)
+  uint MessageSize(MessageLite value)
   {
-    int size = value.ByteSize();
+    uint size = value.ByteSize();
     return this.outstream.VarintSize32(size) + size;
   }
-  int GroupNoVirTualSize(MessageType)(MessageType value)
+  uint GroupNoVirTualSize(MessageType)(MessageType value)
   {
     return (cast(MessageType)value).ByteSize();
   }
-  int MessageNoVirTualSize(MessageType)(MessageType value)
+  uint MessageNoVirTualSize(MessageType)(MessageType value)
   {
     int size = (cast(MessageType)value).ByteSize();
     return this.outstream.VarintSize32(size) + size;
@@ -516,6 +638,14 @@ class WireFormatLite
     instream = new CodedInputStream;
   }
  private:
-  CodedOutputStream outstream;
-  CodedInputStream instream;
+  CodedOutputStream *outstream;
+  CodedInputStream *instream;
+}
+
+debug(UnitTest)
+{
+  unittest
+  {
+    WireFormatLite p = new WireFormatLite;
+  }
 }
