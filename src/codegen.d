@@ -45,6 +45,7 @@ class CodeGen
     }
     for(int i= 0; i < this.messages.extension_count(); i++)
     {
+      rst ~= "import extension;";
       rst ~= genFieldCode(this.messages.extension(i));
     }
     return rst;
@@ -64,6 +65,7 @@ class CodeGen
     }
     for(int i =0; i< msg.extension_count(); i++)
     {
+      rst ~="void SerializeExtension(ref CodedOutputStream output){ExtensionIdentifier*[] elements = extensionset.isClass(this); for(int i = 0; i < elements.length; i++){elements[i].Serialize(output);}}void ExtensionMergePartialFromStream(ref CodedInputStream input){ExtensionIdentifier*[] elements = extensionset.isClass(this);for(int i = 0; i < elements.length; i++){elements[i].Serialize(output);}}";
       rst ~= genFieldCode(msg.extension(i));
     }
     rst ~= "uint _has_bits_[("~ tango.text.convert.Integer.toString(n) ~" + 31) / 32];size_t cached_size;";
@@ -105,7 +107,7 @@ class CodeGen
       {
         rtype = "int";
       }
-      rst ~= "static ExtensionIdentifier!("~ rtype ~(field.is_repeated()? "[]":" " )~","~rtype~") " ~ field.name() ~" = ExtensionIdentifier!("~ rtype ~(field.is_repeated()? "[]":" " )~","~rtype~")(" ~(field.is_repeated()? "true":"false")~"," ~ FieldTypeToString(field.type()) ~ ","~ tango.text.convert.Integer.toString(field.number()) ~ "," ~ (field.is_packed()?"true":"false")~(field.has_default_value()?","~field.getdefultvalue():"") ~");";
+      rst ~= "static ExtensionIdentifier " ~ field.name() ~" = new ExtensionIdentifier(" ~ field.containing_type().name() ~ (field.is_repeated()? "true":"false")~ "," ~  (field.is_packed()?"true":"false") ~ FieldTypeToString(field.type()) ~ ","~ tango.text.convert.Integer.toString(field.number()) ~ "," ~ (field.has_default_value()?","~field.getdefultvalue():"") ~");";
       return rst;
     }
     string rtype;
@@ -290,7 +292,8 @@ class CodeGen
   {
     string rst;
     rst ~= genByteCount(msg);
-    rst ~= "byte* SerializeToBytes(byte* target){byte[] rst;";
+    /*
+    rst ~= "byte* SerializeToBytes(byte* target){";
     for(int i =0;i<msg.field_count();i++) {
       if(msg.field(i).is_repeated()) {
         rst ~= genRepeatedCode(msg.field(i));
@@ -299,6 +302,7 @@ class CodeGen
       }
     }
     rst ~= "return target;}";
+    */
     rst ~= "void Serialize(CodedOutputStream output){";
     for(int i =0;i<msg.field_count();i++) {
       if(msg.field(i).is_repeated()) {
@@ -307,11 +311,12 @@ class CodeGen
         rst ~= genCommonCode(msg.field(i), true);
       }
     }
-    rst ~= "}";
+    rst ~= "SerializeExtension(output)if(_unknown_fields.length > 0){output.WriteRaw(_unknown_fields);};}";
     rst ~= "void MergePartialFromStream(CodedInputStream input) {uint tag;while((tag = input.ReadTag()) != 0){switch(GetTagFieldNumber(tag)){";
     rst ~= genReadCode(msg);
-    rst ~= "}}}";
-    rst ~= "void MergeFrom(Message from) {uint tag;}";
+    rst ~= "}}ZeroCopyInputStream tmp = new ZeroCopyInputStream(_unknown_fields);CodedInputStream tmp2 = new CodedInputStream(tmp);this.ExtensionMergePartialFromStream(tmp2);}";
+    rst ~= "void MergeFrom(" ~ msg.full_name() ~ " from) {if(this == from) return; this = from ;}";
+    rst ~= "void MergeFrom(Message from){if(this == from) return;byte[] coded_tmp; coded_tmp.length = from.ByteSize();byte* code_ptr = coded_tmp.ptr; from.SerializeToBytes(code_ptr); ZeroCopyInputStream ztmp = new ZeroCopyInputStream(coded_tmp); CodedInputStream tmp = new CodedInputStream(&ztmp);this.MergePartialFromStream(tmp);}";
     return rst;
   }
   string genByteCount(Descriptor msg)
@@ -493,6 +498,6 @@ class CodeGen
 string getExtensionFunc(Descriptor msg)
 {
   string rst;
-  rst ~="import extension;"~"mixin Ext;";
+  rst ~="mixin Ext;";
   return rst;
 }

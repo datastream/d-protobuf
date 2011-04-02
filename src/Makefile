@@ -3,8 +3,8 @@ SHELL = /bin/sh
 
 OBJS = preprocessor.o
 CC = ldc
-SRCS = preprocessor.d AST.d analysis.d descriptor.d prototype.d writer.d codegen.d
-MAIN = compiler.d analysis.o AST.o descriptor.o prototype.o writer.o codegen.o
+SRCS = preprocessor.d AST.d analysis.d descriptor.d prototype.d writer.d codegen.d commen.d
+MAIN = compiler.d analysis.o AST.o descriptor.o prototype.o writer.o codegen.o commen.o
 TAG = compiler
 LIB =
 

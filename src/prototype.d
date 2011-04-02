@@ -63,15 +63,6 @@ static const int TagTypeBits = 3;
 // Mask for those bits.
 static const uint TagTypeMask = (1 << TagTypeBits) - 1;
 
-struct ExtensionIdentifier(T,V)
-{
-  bool repeated_;
-  Type type_;
-  int number_;
-  bool packed_;
-  T value_;
-  V v_type_;
-}
 struct wordmap
 {
   string info;

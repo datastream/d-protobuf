@@ -96,12 +96,6 @@ class WireFormat : WireFormatLite
     }
     return true;
   }
-  void WriteString(int field_number, char[] value, ref CodedOutputStream output)
-  {
-    WriteTagToBytes(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
-    output.WriteVarint32(value.length, output);
-    output.WriteString(value);
-  }
   void SkipField(ref CodedInputStream input, uint tag , byte[] unknown_fields)
   {
     switch(GetTagWireType(tag))

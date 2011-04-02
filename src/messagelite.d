@@ -8,6 +8,8 @@ class MessageLite: WireFormat
   }
   byte* SerializeWithCachedSizesToBytes(byte* target)
   {
+    byte[] tmp = new byte[ByteSize()];
+    target = &tmp;
     return target;
   }
   size_t GetCachedSize()
@@ -23,29 +25,7 @@ class MessageLite: WireFormat
   uint total_size;
   uint cached_size;
 }
-class RepeatedField(T)
-{
-  void Add(T element)
-  {
-    elements ~= element;
-    total_size += element.sizeof;
-  }
-  int Size()
-  {
-    return total_size;
-  }
-  T Get(int index)
-  {
-    return elements[index];
-  }
-  void RemoveLast()
-  {
-    elements = elements[0..length - 2];
-  }
- private:
-  T[] elements;
-  int total_size;
-}
+// unknow_field should be a array ?
 class RepeatedPtrField(T)
 {
   void Add(char[] element)

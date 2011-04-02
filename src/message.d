@@ -31,12 +31,8 @@ class Message : MessageLite
           this.PartialSerialize()~other.PartialSerialize();
         }
     }
-    byte[] Serialize()
+    byte* SerializeToBytes(byte* tmp)
     {
-        return _unknown_fields;
-    }
-    Message Deserialize(byte[] input)
-    {
-        return new Message(input);
+        return _unknown_fields.ptr;
     }
 }

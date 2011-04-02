@@ -286,6 +286,18 @@ class WireFormatLite
     WriteTag(field_number, WireType.WIRETYPE_VARINT, output);
     output.WriteVarint32SignExtended(value);
   }
+  void WriteString(int field_number, char[] value, ref CodedOutputStream output)
+  {
+    WriteTagToBytes(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+    output.WriteVarint32(value.length, output);
+    output.WriteString(value);
+  }
+  void WriteBytes(int field_number, byte[] value, ref CodedOutputStream output)
+  {
+    WriteTagToBytes(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+    output.WriteVarint32(value.length, output);
+    output.WriteRaw(value);
+  }
   void WriteGroup(int field_number, MessageLite value, ref CodedOutputStream output)
   {
     WriteTagToBytes(field_number, WireType.WIRETYPE_START_GROUP, output);
@@ -368,6 +380,16 @@ class WireFormatLite
   void WriteEnumNoTag(int value, ref CodedOutputStream output)
   {
     output.WriteVarint32SignExtended(value);
+  }
+  void WriteStringNoTag(char[] value, ref CodedOutputStream output)
+  {
+    output.WriteVarint32(value.length, output);
+    output.WriteString(value);
+  }
+  void WriteBytesNoTag(byte[] value, ref CodedOutputStream output)
+  {
+    output.WriteVarint32(value.length, output);
+    output.WriteRaw(value);
   }
   void WriteGroupNoTag(MessageLite value, ref CodedOutputStream output)
   {

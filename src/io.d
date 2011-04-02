@@ -65,7 +65,7 @@ class ZeroCopyInputStream
       if (size != -1) {
         chunk = size;
       } else {
-        chunk = zfd.conduit.bufferSize;
+        chunk = zsd.conduit.bufferSize;
       }
       
       while (len < size)
@@ -73,7 +73,7 @@ class ZeroCopyInputStream
         if (dst.length - len is 0)
           dst.length = len + chunk;
         
-        if (( i = zfd.read (dst[len .. $])) is zfd.Eof){
+        if (( i = zsd.read (dst[len .. $])) is zsd.Eof){
           len += i;
           break;
         }
@@ -172,11 +172,11 @@ class CodedInputStream
   {
     byte[] bytes;
     bytes.length = value.sizeof;
-    if(BufferSize() > value.sizeof) {
+    if(BufferSize() >= value.sizeof) {
       memcpy(&bytes, input, value.sizeof);
       input += value.sizeof;
     } else {
-      if (ReadRaw(bytes, value.sizeof))
+      if (!ReadRaw(bytes, value.sizeof))
         return false;
     }
     ReadLittleEndian32FromBytes(bytes.ptr, value);
@@ -186,11 +186,11 @@ class CodedInputStream
   {
     byte[] bytes;
     bytes.length = value.sizeof;
-    if(BufferSize() > value.sizeof) {
+    if(BufferSize() >= value.sizeof) {
       memcpy(&bytes, input, value.sizeof);
       input += value.sizeof;
     } else {
-      if (ReadRaw(bytes, value.sizeof))
+      if (!ReadRaw(bytes, value.sizeof))
         return false;
     }
     ReadLittleEndian64FromBytes(bytes.ptr, value);
@@ -361,6 +361,10 @@ class CodedInputStream
   {
     return buffer_end - input;
   }
+  byte[] CodedByte()
+  {
+    return coded_stream;
+  }
  private:
   ZeroCopyInputStream* coded_raw;
   byte* input;
@@ -413,10 +417,8 @@ class CodedOutputStream
       throw new Exception("Can't malloc memory");
     }
   }
-  this()
+  ~this()
   {
-  }
-  ~this() {
     zstream.raw_size = ByteCount();
   }
   bool AppendMore()
