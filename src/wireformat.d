@@ -64,6 +64,7 @@ class WireFormat : WireFormatLite
     uint len;
     if(!input.ReadVarint32(len)) return false;
     if(!input.ReadString(value, len)) return false;
+    return false;
   }
   bool ReadRepeatedString(ref CodedInputStream input, ref char[][] values,  FieldType type)
   {
