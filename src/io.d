@@ -5,6 +5,7 @@ private import tango.io.device.File;
 private import tango.net.device.Socket;
 private import tango.stdc.string;
 private alias char[] string;
+import tango.io.Stdout;
 
 class ZeroCopyInputStream
 {
@@ -49,14 +50,14 @@ class ZeroCopyInputStream
       } else {
         chunk = zfd.conduit.bufferSize;
       }
-      
       while (len < size)
       {
-        if (dst.length - len is 0)
+        int rst = zfd.length - zfd.position;
+        if (dst.length - len is 0) {
           dst.length = len + chunk;
-        
+        }
         if (( i = zfd.read (dst[len .. $])) is zfd.Eof){
-          len += i;
+          len += rst;
           break;
         }
         len += i;
@@ -80,7 +81,7 @@ class ZeroCopyInputStream
         len += i;
       }      
     }
-    buffer ~= dst;
+    buffer ~= dst[0..len];
     // raw_stream.seek(off_size);
     // buffer = (zfd.load(size)).ptr;
     return len;
@@ -91,11 +92,15 @@ class CodedInputStream
   this(ZeroCopyInputStream* coded_input)
   {
     this.coded_raw = coded_input;
-    input = coded_stream.ptr;
+    TotalBytes = 0;
+    buffer_end = coded_stream.ptr + TotalBytes;
     SetCache();
     if(coded_raw.mode == coded_raw.StreamType.BUFFER) {
       input = coded_raw.buffer;
       buffer_end = input + coded_raw.buffer_length;
+    } else {
+      Refresh();
+      input = coded_stream.ptr;
     }
   }
   this()
@@ -123,10 +128,10 @@ class CodedInputStream
   {
     if(coded_raw.mode == coded_raw.StreamType.BUFFER)
       return false;
-    buffer_size = coded_raw.callbackread(coded_stream, cache_size);
-    if(buffer_size == cache_size) {
-      TotalBytes = coded_stream.length;
-      buffer_end = coded_stream.ptr + coded_stream.length;
+    int buffer_size = coded_raw.callbackread(coded_stream, cache_size);
+    if(buffer_size != 0) {
+      TotalBytes += buffer_size;
+      buffer_end = coded_stream.ptr + TotalBytes;
       if(TotalBytes > DefaultTotalBytesWarningThreshold) {
         if(TotalBytes > DefaultTotalBytesLimit) {
           throw new Exception("Reatch Recursion limit.");
@@ -155,8 +160,10 @@ class CodedInputStream
     if(BufferSize() < size) {
       if(!Refresh()) return false;
     }
-    memcpy(&buffer, input, size);
-    input += size;
+    if(BufferSize() >= size) {
+      memcpy(buffer.ptr, input, size);
+      input += size;
+    }
     return true;
   }
   bool ReadString(ref char[] buffer, int size)
@@ -173,7 +180,7 @@ class CodedInputStream
     byte[] bytes;
     bytes.length = value.sizeof;
     if(BufferSize() >= value.sizeof) {
-      memcpy(&bytes, input, value.sizeof);
+      memcpy(bytes.ptr, input, value.sizeof);
       input += value.sizeof;
     } else {
       if (!ReadRaw(bytes, value.sizeof))
@@ -187,7 +194,7 @@ class CodedInputStream
     byte[] bytes;
     bytes.length = value.sizeof;
     if(BufferSize() >= value.sizeof) {
-      memcpy(&bytes, input, value.sizeof);
+      memcpy(bytes.ptr, input, value.sizeof);
       input += value.sizeof;
     } else {
       if (!ReadRaw(bytes, value.sizeof))
@@ -217,32 +224,32 @@ class CodedInputStream
       {
         byte b;
         b = *input;
-        if(i < bits) {
-          value |= (cast(T)(b & 0x7F)) << (7*i);
+        if(i <= bits) {
+          value |= (cast(T)(b & 0x7f)) << (7*i);
+        } else {
+          throw new Exception("Data corrupt");
         }
         i++;
         input++;
-        if(!(b & 0x80)) {
+        if((b & 0x80) == 0) {
           mutilbuffer = false;
-          if(i > MaxVarintBytes)
-            throw new Exception("Data corrupt");
           return;
         }
       }
-      mutilbuffer = true;
+      if(coded_raw.mode != coded_raw.StreamType.BUFFER)
+        mutilbuffer = true;
     }
     readvarint();
     if(mutilbuffer) {
       if(Refresh()) {
         readvarint();
-      } else {
-        throw new Exception("Refresh coded_buffer error");
       }
     }
     return true;
   }
   uint ReadTag()
   {
+    last_tag = 0;
     if(ReadVarint32(last_tag))
       return last_tag;
     return 0;
@@ -275,7 +282,7 @@ class CodedInputStream
   byte* ReadLittleEndian32FromBytes(byte* buffer, ref uint value)
   {
     version(LittleEndian) {
-      memcpy(&value, &buffer, value.sizeof);
+      memcpy(&value, buffer, value.sizeof);
     }
     version(BigEndian) {
       value = cast(uint)(buffer[0]      ) |
@@ -288,7 +295,7 @@ class CodedInputStream
   byte* ReadLittleEndian64FromBytes(byte* buffer, ref ulong value)
   {
     version(LittleEndian) {
-      memcpy(&value, &buffer, value.sizeof);
+      memcpy(&value, buffer, value.sizeof);
     }
     version(BigEndian) {
       uint part0 = cast(uint)(buffer[0]      ) |
@@ -371,7 +378,6 @@ class CodedInputStream
   byte[] coded_stream;
   byte* buffer_end;
   size_t cache_size;
-  size_t buffer_size;
   size_t TotalBytes;
   uint last_tag;
   static const int MaxVarintBytes = 10;
@@ -380,51 +386,54 @@ class CodedInputStream
   static const int DefaultTotalBytesWarningThreshold = 32 << 20;
   static const int DefaultRecursionLimit = 64;
 }
-
 class ZeroCopyOutputStream
 {
-  byte* raw_stream;
-  void* zfd;
+  union{
+    File zfd;
+    Socket zsd;
+  }
+  CodedOutputStream copyout;
   bool type;
-  size_t raw_size;
   this(File fd)
   {
-    zfd = &fd;
+    zfd = fd;
     type = true;
   }
   this(Socket fd)
   {
-    zfd = &fd;
+    zsd = fd;
     type = false;
   }
   ~this()
   {
-    if(raw_size >0) {
+    if(copyout.ByteCount() >0) {
       if (type)
-        (cast(File)zfd).write(raw_stream[0..raw_size]);
-      else
-        (cast(Socket)zfd).write(raw_stream[0..raw_size]);
+      {
+        zfd.write(copyout.coded_stream[0..copyout.ByteCount()]);
+      } else {
+        zsd.write(copyout.coded_stream[0..copyout.ByteCount()]);
+      }
     }
   }
 }
 class CodedOutputStream
 {
+  this()
+  {
+  }
   this(ZeroCopyOutputStream* coded_output)
   {
     zstream = coded_output;
-    coded_output.raw_stream = coded_stream.ptr;
+    zstream.copyout = this;
     if(!AppendMore()) {
       throw new Exception("Can't malloc memory");
     }
-  }
-  ~this()
-  {
-    zstream.raw_size = ByteCount();
   }
   bool AppendMore()
   {
     try{
       coded_stream ~= new byte[block_size];
+      output = coded_stream.ptr;
       buffer_end = coded_stream.ptr + coded_stream.length;
     }
     catch(Exception e ) {
@@ -521,26 +530,26 @@ class CodedOutputStream
           target[3] = (value >> 21) | 0x80;
           if (value >= (1 << 28)) {
             target[4] = value >> 28;
-            output +=5;
+            output += 5;
             return ;
           } else {
             target[3] &= 0x7f;
-            output +=4;
+            output += 4;
             return ;
           }
         } else {
           target[2] &= 0x7f;
-          output +=3;
+          output += 3;
           return ;
         }
       } else {
         target[1] &= 0x7f;
-        output +=2;
+        output += 2;
         return ;
       }
     } else {
       target[0] &= 0x7f;
-      output +=1;
+      output += 1;
       return ;
     }
   }
@@ -549,7 +558,6 @@ class CodedOutputStream
     uint part0 = cast(uint)(value      );
     uint part1 = cast(uint)(value >> 28);
     uint part2 = cast(uint)(value >> 56);
-    byte* target = output;
     int size;
     if (part2 == 0) {
       if (part1 == 0) {
@@ -588,18 +596,18 @@ class CodedOutputStream
         size = 10; goto size10;
       }
     }
- size10: target[9] = cast(byte)((part2 >>  7) | 0x80);
- size9 : target[8] = cast(byte)((part2      ) | 0x80);
- size8 : target[7] = cast(byte)((part1 >> 21) | 0x80);
- size7 : target[6] = cast(byte)((part1 >> 14) | 0x80);
- size6 : target[5] = cast(byte)((part1 >>  7) | 0x80);
- size5 : target[4] = cast(byte)((part1      ) | 0x80);
- size4 : target[3] = cast(byte)((part0 >> 21) | 0x80);
- size3 : target[2] = cast(byte)((part0 >> 14) | 0x80);
- size2 : target[1] = cast(byte)((part0 >>  7) | 0x80);
- size1 : target[0] = cast(byte)((part0      ) | 0x80);
+ size10: output[9] = cast(byte)((part2 >>  7) | 0x80);
+ size9 : output[8] = cast(byte)((part2      ) | 0x80);
+ size8 : output[7] = cast(byte)((part1 >> 21) | 0x80);
+ size7 : output[6] = cast(byte)((part1 >> 14) | 0x80);
+ size6 : output[5] = cast(byte)((part1 >>  7) | 0x80);
+ size5 : output[4] = cast(byte)((part1      ) | 0x80);
+ size4 : output[3] = cast(byte)((part0 >> 21) | 0x80);
+ size3 : output[2] = cast(byte)((part0 >> 14) | 0x80);
+ size2 : output[1] = cast(byte)((part0 >>  7) | 0x80);
+ size1 : output[0] = cast(byte)((part0      ) | 0x80);
 
-    target[size-1] &= 0x7f;
+    output[size-1] &= 0x7f;
     output += size;
   }
   void WriteTag(uint value)
@@ -758,73 +766,81 @@ class CodedOutputStream
     memcpy(target, &value, value.length);
     return target + value.length;
   }
-  /*
-   * function for bytes size
-   */
-  uint VarintSize32(uint value)
-  {
-    if (value < (1 << 7)) {
-      return 1;
-    } else if (value < (1 << 14)) {
-      return 2;
-    } else if (value < (1 << 21)) {
-      return 3;
-    } else if (value < (1 << 28)) {
-      return 4;
-    } else {
-      return 5;
-    }
-  }
-  uint VarintSize64(ulong value)
-  {
-    if (value < (cast(ulong)1 << 35)) {
-      if (value < (cast(ulong)1 << 7)) {
-        return 1;
-      } else if (value < (cast(ulong)1 << 14)) {
-        return 2;
-      } else if (value < (cast(ulong)1 << 21)) {
-        return 3;
-      } else if (value < (cast(ulong)1 << 28)) {
-        return 4;
-      } else {
-        return 5;
-      }
-    } else {
-      if (value < (1L << 42)) {
-        return 6;
-      } else if (value < (cast(ulong)1 << 49)) {
-        return 7;
-      } else if (value < (cast(ulong)1 << 56)) {
-        return 8;
-      } else if (value < (cast(ulong)1 << 63)) {
-        return 9;
-      } else {
-        return 10;
-      }
-    }
-  }
-  uint VarintSize32SignExtended(int value)
-  {
-    if(value < 0) {
-      return VarintSize64(value);
-    }
-    else {
-      return VarintSize32(value);
-    }
-  }
   uint ByteCount()
   {
     return output - coded_stream.ptr;
   }
  private:
   byte[] coded_stream;
-  byte* output;
+  byte* output;  //cur_opt
   byte* buffer_end;
   ZeroCopyOutputStream* zstream;
   static const int MaxVarintBytes = 10;
   static const int MaxVarint32Bytes = 5;
   static const int block_size = 4096;
-  size_t buffer_size;
   size_t total_size;
   bool had_error;
+}
+/*
+ * function for bytes size
+ */
+uint VarintSize32(uint value)
+{
+  if (value < (1 << 7)) {
+    return 1;
+  } else if (value < (1 << 14)) {
+    return 2;
+  } else if (value < (1 << 21)) {
+    return 3;
+  } else if (value < (1 << 28)) {
+    return 4;
+  } else {
+    return 5;
+  }
+}
+uint VarintSize64(ulong value)
+{
+  if (value < (cast(ulong)1 << 35)) {
+    if (value < (cast(ulong)1 << 7)) {
+      return 1;
+    } else if (value < (cast(ulong)1 << 14)) {
+      return 2;
+    } else if (value < (cast(ulong)1 << 21)) {
+      return 3;
+    } else if (value < (cast(ulong)1 << 28)) {
+      return 4;
+    } else {
+      return 5;
+    }
+  } else {
+    if (value < (1L << 42)) {
+      return 6;
+    } else if (value < (cast(ulong)1 << 49)) {
+      return 7;
+    } else if (value < (cast(ulong)1 << 56)) {
+      return 8;
+    } else if (value < (cast(ulong)1 << 63)) {
+      return 9;
+    } else {
+      return 10;
+    }
+  }
+}
+uint VarintSize32SignExtended(int value)
+{
+  if(value < 0) {
+    return VarintSize64(cast(ulong)value);
+  }
+  else {
+    return VarintSize32(cast(uint)value);
+  }
+}
+
+debug(UnitTest)
+{
+  unittest
+  {
+    CodedOutputStream output = new CodedOutputStream;
+    //assert(output.WriteVarint32(1));
+  }
 }

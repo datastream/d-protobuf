@@ -55,7 +55,7 @@ class CodeGen
     string rst;
     if(msg.containing_type())
       rst ~= "static ";
-    rst ~= "class "~msg.name() ~" : Message {";
+    rst ~= "class "~msg.name() ~" : Message {this(){super();}";
     int n = 0;
     for(int i =0; i< msg.field_count(); i++)
     {
@@ -303,7 +303,7 @@ class CodeGen
     }
     rst ~= "return target;}";
     */
-    rst ~= "void Serialize(CodedOutputStream output){";
+    rst ~= "void Serialize(ref CodedOutputStream output){";
     for(int i =0;i<msg.field_count();i++) {
       if(msg.field(i).is_repeated()) {
         rst ~= genRepeatedCode(msg.field(i), true);
@@ -311,10 +311,15 @@ class CodeGen
         rst ~= genCommonCode(msg.field(i), true);
       }
     }
-    rst ~= "SerializeExtension(output)if(_unknown_fields.length > 0){output.WriteRaw(_unknown_fields);};}";
-    rst ~= "void MergePartialFromStream(CodedInputStream input) {uint tag;while((tag = input.ReadTag()) != 0){switch(GetTagFieldNumber(tag)){";
+    if(msg.extension_range_count() > 0)
+      rst ~= "SerializeExtension(output);";
+    rst ~= "if(_unknown_fields.length > 0){output.WriteRaw(_unknown_fields);};}";
+    rst ~= "void MergePartialFromStream(ref CodedInputStream input) {uint tag;while((tag = input.ReadTag()) != 0){switch(GetTagFieldNumber(tag)){";
     rst ~= genReadCode(msg);
-    rst ~= "}}ZeroCopyInputStream tmp = new ZeroCopyInputStream(_unknown_fields);CodedInputStream tmp2 = new CodedInputStream(tmp);this.ExtensionMergePartialFromStream(tmp2);}";
+    rst ~= "}}";
+    if(msg.extension_range_count() > 0)
+      rst ~= "ZeroCopyInputStream tmp = new ZeroCopyInputStream(_unknown_fields);CodedInputStream tmp2 = new CodedInputStream(&tmp);this.ExtensionMergePartialFromStream(tmp2);";
+    rst ~= "}";
     rst ~= "void MergeFrom(" ~ msg.full_name() ~ " from) {if(this == from) return; this = from ;}";
     rst ~= "void MergeFrom(Message from){if(this == from) return;byte[] coded_tmp; coded_tmp.length = from.ByteSize();byte* code_ptr = coded_tmp.ptr; from.SerializeToBytes(code_ptr); ZeroCopyInputStream ztmp = new ZeroCopyInputStream(coded_tmp); CodedInputStream tmp = new CodedInputStream(&ztmp);this.MergePartialFromStream(tmp);}";
     return rst;

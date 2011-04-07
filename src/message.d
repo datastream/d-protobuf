@@ -17,7 +17,7 @@ class Message : MessageLite
     }
     void SetCachedSize(int size)
     {
-        _cached_size_ = size; 
+        cached_size = size; 
     }
     byte[] _unknown_fields;
     bool IsInitialized()
@@ -26,13 +26,13 @@ class Message : MessageLite
     }
     void CheckTypeAndMergeFrom(Message other)
     {
-        if(other.classinfo.name is this.classinfo.name)
-        {
-          this.PartialSerialize()~other.PartialSerialize();
-        }
     }
     byte* SerializeToBytes(byte* tmp)
     {
         return _unknown_fields.ptr;
+    }
+    this()
+    {
+      super();
     }
 }

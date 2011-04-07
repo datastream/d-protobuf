@@ -1,15 +1,15 @@
 import wireformat;
-
+import io;
 class MessageLite: WireFormat
 {
   this()
   {
-    total_size = 0;
+    super();
   }
   byte* SerializeWithCachedSizesToBytes(byte* target)
   {
     byte[] tmp = new byte[ByteSize()];
-    target = &tmp;
+    target = tmp.ptr;
     return target;
   }
   size_t GetCachedSize()
@@ -20,10 +20,12 @@ class MessageLite: WireFormat
   {
     return this.total_size;
   }
-  
- private:
-  uint total_size;
+  void Serialize(ref CodedOutputStream output)
+  {
+  }
   uint cached_size;
+private:
+  uint total_size;
 }
 // unknow_field should be a array ?
 class RepeatedPtrField(T)

@@ -1,7 +1,7 @@
 import io;
 import prototype;
 import wireformatlite;
-
+import tango.io.Stdout;
 class WireFormat : WireFormatLite
 {
   bool ReadRepeatedPrimitive(V)(ref CodedInputStream input, ref V[] values, FieldType type)
@@ -17,10 +17,11 @@ class WireFormat : WireFormatLite
       uint len;
       if(!input.ReadVarint32(len)) return false;
       byte[] buffer;
+      buffer.length = len;
       if(!input.ReadRaw(buffer, len)) return false;
       ZeroCopyInputStream tmp = new ZeroCopyInputStream(buffer);
       CodedInputStream tmp_input = new CodedInputStream(&tmp);
-      while(true)
+      while(tmp_input.BufferSize() > 0)
       {
        V value;
        if(!ReadPrimitive!(V)(tmp_input, value, type)) return false;
@@ -38,7 +39,8 @@ class WireFormat : WireFormatLite
   bool ReadRepeatedBytes(ref CodedInputStream input, ref byte[][] values, FieldType type)
   {
     byte[] value;
-    if(!ReadBytes(input, value)) return false;
+    if(!ReadBytes(input, value, type)) return false;
+    values ~= value;
     return true;
   }
   bool ReadPackedBytes(ref CodedInputStream input, ref byte[][] values, FieldType type)
@@ -48,26 +50,43 @@ class WireFormat : WireFormatLite
     byte[] buffer;
     if(!input.ReadRaw(buffer, len)) return false;
     ZeroCopyInputStream tmp = new ZeroCopyInputStream(buffer);
-    CodedInputStream tmp_input = new CodedInputStream(tmp);
+    CodedInputStream tmp_input = new CodedInputStream(&tmp);
     while(true)
     {
       byte[] value;
-      if(!ReadBytes(tmp_input, value)) return false;
+      if(!ReadBytes(tmp_input, value, type)) return false;
       values ~= value;
     }
     return true;
   }
   bool ReadString(ref CodedInputStream input, ref char[] value, FieldType type)
   {
-    return ReadBytes(input, cast(byte[])value);
+    uint len;
+    if(!input.ReadVarint32(len)) return false;
+    if(!input.ReadString(value, len)) return false;
   }
   bool ReadRepeatedString(ref CodedInputStream input, ref char[][] values,  FieldType type)
   {
-    return ReadRepeatedBytes(input, cast(byte[][])values);
+    char[] value;
+    if(!ReadString(input, value, type)) return false;
+    values ~= value;
+    return true;
   }
   bool ReadPackedString(ref CodedInputStream input, ref char[][] values, FieldType type)
   {
-    return ReadPackedBytes(input, cast(byte[][])values);
+    uint len;
+    if(!input.ReadVarint32(len)) return false;
+    char[] buffer;
+    if(!input.ReadString(buffer, len)) return false;
+    ZeroCopyInputStream tmp = new ZeroCopyInputStream(cast(byte[])buffer);
+    CodedInputStream tmp_input = new CodedInputStream(&tmp);
+    while(true)
+    {
+      char[] value;
+      if(!ReadString(tmp_input, value, type)) return false;
+      values ~= value;
+    }
+    return true;
   }
   bool ReadMeaasge(V)(ref CodedInputStream input, ref V value, FieldType type)
   {
@@ -98,44 +117,54 @@ class WireFormat : WireFormatLite
   }
   void SkipField(ref CodedInputStream input, uint tag , byte[] unknown_fields)
   {
+    CodedOutputStream tmp = new CodedOutputStream;
+    CodedOutputStream* output = &tmp;
     switch(GetTagWireType(tag))
     {
       case WireType.WIRETYPE_LENGTH_DELIMITED:
         {
           uint len;
           byte[] buffer;
-          if(!ReadVarint32(len)) throw new Exception("Failed to skip length");
-          unknown_fields.length = UInt32Size(tag) + UInt32Size(len);
-          input.WriteVarint32ToBytes(unknown_fields,tag);
-          input.WriteVarint32ToBytes(unknown_fields,len);
-          input.WriteRaw(buffer, len);
+          if(!input.ReadVarint32(len)) throw new Exception("Failed to skip length");
+          byte *unknown = buffer.ptr;
+          buffer.length = UInt32Size(tag) + UInt32Size(len);
+          output.WriteVarint32ToBytes(tag, unknown);
+          output.WriteVarint32ToBytes(len, unknown);
+          unknown_fields ~= buffer;
+          buffer.length = len;
+          input.ReadRaw(buffer, len);
           unknown_fields ~= buffer;
           break;
         }
       case WireType.WIRETYPE_VARINT:
         {
           uint digital;
-          if(!ReadVarint32(digital)) throw new Exception("Failed to skip varint");
-          unknown_fields.length = UInt32Size(tag) + UInt32Size(digital);
-          input.WriteVarint32ToBytes(unknown_fields,tag);
-          input.WriteVarint32ToBytes(unknown_fields,digital);
+          byte[] buffer;
+          if(!input.ReadVarint32(digital)) throw new Exception("Failed to skip varint");
+          byte *unknown = buffer.ptr;
+          buffer.length = UInt32Size(tag) + UInt32Size(digital);
+          output.WriteVarint32ToBytes(tag,unknown);
+          output.WriteVarint32ToBytes(digital,unknown);
+          unknown_fields ~= buffer;
           break;
         }
       case WireType.WIRETYPE_FIXED32:
         {
           byte[] buffer;
-          unknown_fields.length = UInt32Size(tag);
-          input.WriteVarint32ToBytes(unknown_fields,tag);
-          input.WriteRaw(buffer, 4);
+          byte *unknown = buffer.ptr;
+          buffer.length = UInt32Size(tag);
+          output.WriteVarint32ToBytes(tag,unknown);
+          input.ReadRaw(buffer, 4);
           unknown_fields ~= buffer;
           break;
         }
       case WireType.WIRETYPE_FIXED64:
         {
           byte[] buffer;
-          unknown_fields.length = UInt32Size(tag);
-          input.WriteVarint32ToBytes(unknown_fields,tag);
-          input.WriteRaw(buffer, 4);
+          byte *unknown = buffer.ptr;
+          buffer.length = UInt32Size(tag);
+          output.WriteVarint32ToBytes(tag,unknown);
+          input.ReadRaw(buffer, 8);
           unknown_fields ~= buffer;
           break;
         }
@@ -144,5 +173,9 @@ class WireFormat : WireFormatLite
           throw new Exception("Wrong type");
         }
     }
+  }
+  this()
+  {
+    super();
   }
 }
