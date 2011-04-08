@@ -313,10 +313,10 @@ class CodeGen
     }
     if(msg.extension_range_count() > 0)
       rst ~= "SerializeExtension(output);";
-    rst ~= "if(_unknown_fields.length > 0){output.WriteRaw(_unknown_fields);};}";
+    rst ~= "if(_unknown_fields.length > 0){output.WriteRaw(_unknown_fields);}output.WriteTag(0);}";
     rst ~= "void MergePartialFromStream(ref CodedInputStream input) {uint tag;while((tag = input.ReadTag()) != 0){switch(GetTagFieldNumber(tag)){";
     rst ~= genReadCode(msg);
-    rst ~= "}}";
+    rst ~= "default:{SkipField(input,tag,_unknown_fields );break;}}}";
     if(msg.extension_range_count() > 0)
       rst ~= "ZeroCopyInputStream tmp = new ZeroCopyInputStream(_unknown_fields);CodedInputStream tmp2 = new CodedInputStream(&tmp);this.ExtensionMergePartialFromStream(tmp2);";
     rst ~= "}";
