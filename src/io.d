@@ -232,6 +232,8 @@ class CodedInputStream
         i++;
         input++;
         if((b & 0x80) == 0) {
+          if((b&0x7f) == 0)
+            Skip(-1);
           mutilbuffer = false;
           return;
         }

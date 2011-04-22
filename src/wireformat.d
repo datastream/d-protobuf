@@ -2,6 +2,8 @@ import io;
 import prototype;
 import wireformatlite;
 import tango.io.Stdout;
+import message;
+
 class WireFormat : WireFormatLite
 {
   bool ReadRepeatedPrimitive(V)(ref CodedInputStream input, ref V[] values, FieldType type)
@@ -92,7 +94,7 @@ class WireFormat : WireFormatLite
   bool ReadMeaasge(V)(ref CodedInputStream input, ref V value, FieldType type)
   {
     uint len;
-    if(!ReadVarint32(len)) return false;
+    if(!input.ReadVarint32(len)) return false;
     byte[] buffer;
     if(!input.ReadRaw(buffer, len)) return false;
     ZeroCopyInputStream tmp = new ZeroCopyInputStream(buffer);
@@ -104,16 +106,58 @@ class WireFormat : WireFormatLite
   {
     V value;
     uint len;
-    if(!ReadVarint32(len)) return false;
+    if(!input.ReadVarint32(len)) return false;
     byte[] buffer;
     if(!input.ReadRaw(buffer, len)) return false;
     ZeroCopyInputStream tmp = new ZeroCopyInputStream(buffer);
-    CodedInputStream tmp_input = new CodedInputStream(tmp);
+    CodedInputStream tmp_input = new CodedInputStream(&tmp);
     while(true)
     {
-      if(!ReadMeaasge!(V)(tmp_input, value)) return false;
+      value.MergePartialFromStream(tmp_input);
       values ~= value;
     }
+    return true;
+  }
+  bool ReadPackedMessageNoVirtual(ref CodedInputStream input, ref Message[] values, FieldType type)
+  {
+    uint len;
+    if(!input.ReadVarint32(len)) return false;
+    byte[] buffer;
+    if(!input.ReadRaw(buffer, len)) return false;
+    ZeroCopyInputStream tmp = new ZeroCopyInputStream(buffer);
+    CodedInputStream tmp_input = new CodedInputStream(&tmp);
+    int i = values.length;
+    while(tmp_input.BufferSize() > 0)
+    {
+      i ++;
+      values.length = i;
+      values[i - 1].MergePartialFromStream(tmp_input);
+    }
+    return true;
+  }
+  bool ReadRepeatedMessageNoVirtual(ref CodedInputStream input, ref Message[] values, FieldType type)
+  {
+    uint len;
+    if(!input.ReadVarint32(len)) return false;
+    byte[] buffer;
+    if(!input.ReadRaw(buffer, len)) return false;
+    ZeroCopyInputStream tmp = new ZeroCopyInputStream(buffer);
+    CodedInputStream tmp_input = new CodedInputStream(&tmp);
+    int i = values.length;
+    i ++;
+    values.length = i;
+    values[length-1].MergePartialFromStream(tmp_input);
+    return true;
+  }
+  bool ReadMessageNoVirtual(ref CodedInputStream input, ref Message value, FieldType type)
+  {
+    uint len;
+    if(!input.ReadVarint32(len)) return false;
+    byte[] buffer;
+    if(!input.ReadRaw(buffer, len)) return false;
+    ZeroCopyInputStream tmp = new ZeroCopyInputStream(buffer);
+    CodedInputStream tmp_input = new CodedInputStream(&tmp);
+    value.MergePartialFromStream(tmp_input);
     return true;
   }
   void SkipField(ref CodedInputStream input, uint tag , byte[] unknown_fields)

@@ -15,10 +15,11 @@ class CodeGen
 {
   string[char[]] code;
   string package_name;
+  string class_init;
   FileDescriptor messages;
   this(FileDescriptor fd)
   {
-    auto logger = Log.lookup("protobuf.log");
+    auto logger = Log.lookup("protobuf");
     for(int i =0; i< fd.dependency_count(); i++)
     {
       CodeGen a = new CodeGen(fd.dependency(i));
@@ -31,8 +32,9 @@ class CodeGen
     }
     catch(Exception x)
     {
-      logger.error ("Exception: " ~ x.toString);
+      logger.error ("Exception: formater " ~ x.toString);
     }
+    has_ext = false;
   }
   string genCode()
   {
@@ -45,9 +47,10 @@ class CodeGen
     }
     for(int i= 0; i < this.messages.extension_count(); i++)
     {
-      rst ~= "import extension;";
       rst ~= genFieldCode(this.messages.extension(i));
     }
+    if(has_ext)
+      rst ~= "import extension;";
     return rst;
   }
   string genMessageCode(Descriptor msg)
@@ -55,7 +58,7 @@ class CodeGen
     string rst;
     if(msg.containing_type())
       rst ~= "static ";
-    rst ~= "class "~msg.name() ~" : Message {this(){super();}";
+    rst ~= "class "~msg.name() ~" : Message {";
     int n = 0;
     for(int i =0; i< msg.field_count(); i++)
     {
@@ -65,10 +68,9 @@ class CodeGen
     }
     for(int i =0; i< msg.extension_count(); i++)
     {
-      rst ~="void SerializeExtension(ref CodedOutputStream output){ExtensionIdentifier*[] elements = extensionset.isClass(this); for(int i = 0; i < elements.length; i++){elements[i].Serialize(output);}}void ExtensionMergePartialFromStream(ref CodedInputStream input){ExtensionIdentifier*[] elements = extensionset.isClass(this);for(int i = 0; i < elements.length; i++){elements[i].Serialize(output);}}";
       rst ~= genFieldCode(msg.extension(i));
     }
-    rst ~= "uint _has_bits_[("~ tango.text.convert.Integer.toString(n) ~" + 31) / 32];size_t cached_size;";
+    rst ~= "uint[("~ tango.text.convert.Integer.toString(n) ~" + 31) / 32] _has_bits_;size_t cached_size;";
     rst ~= "bool has_bit(int index){return (_has_bits_[index / 32] & (1u << (index % 32))) != 0;}void set_bit(int index){_has_bits_[index / 32] |= (1u << (index % 32));}void clear_bit(int index){_has_bits_[index / 32] &= ~(1u << (index % 32));}void SetCachedSize(int size){cached_size = size;}";
     //rst ~= "static " ~ msg.full_name() ~ "* default_instance_;";
     n = 0;
@@ -84,6 +86,8 @@ class CodeGen
     }
     if(msg.extension_range_count()>0)
     {
+      has_ext = true;
+      rst ~="void SerializeExtension(ref CodedOutputStream output){ExtensionIdentifier*[] elements = extensionset.IsClass(this);for(int i = 0; i < elements.length; i++){elements[i].Serialize(output);}}void ExtensionMergePartialFromStream(ref CodedInputStream input){ExtensionIdentifier*[] elements = extensionset.IsClass(this);for(int i = 0; i < elements.length; i++){elements[i].MergePartialFromStream(input);}}";
       rst ~= getExtensionFunc(msg);
     }
     rst ~= genCodeFunc(msg);
@@ -91,7 +95,8 @@ class CodeGen
     {
       rst ~= genMessageCode(msg.nested_type(i));
     }
-    rst ~= "}";
+    rst ~= "this(){super();" ~ class_init ~ "}}";
+    class_init = "";
     return rst;
   }
   string genFieldCode(FieldDescriptor field)
@@ -107,7 +112,8 @@ class CodeGen
       {
         rtype = "int";
       }
-      rst ~= "static ExtensionIdentifier " ~ field.name() ~" = new ExtensionIdentifier(" ~ field.containing_type().name() ~ (field.is_repeated()? "true":"false")~ "," ~  (field.is_packed()?"true":"false") ~ FieldTypeToString(field.type()) ~ ","~ tango.text.convert.Integer.toString(field.number()) ~ "," ~ (field.has_default_value()?","~field.getdefultvalue():"") ~");";
+      rst ~= "ExtensionIdentifier " ~ field.name() ~";";
+      class_init ~= field.name() ~ " = new ExtensionIdentifier(\"" ~ field.containing_type().name() ~ "\", " ~ (field.is_repeated()? "true":"false")~ "," ~  (field.is_packed()?"true":"false") ~ "," ~ FieldTypeToString(field.type()) ~ ","~ tango.text.convert.Integer.toString(field.number()) ~ (field.has_default_value()?","~ field.getdefultvalue():"") ~");";
       return rst;
     }
     string rtype;
@@ -320,8 +326,8 @@ class CodeGen
     if(msg.extension_range_count() > 0)
       rst ~= "ZeroCopyInputStream tmp = new ZeroCopyInputStream(_unknown_fields);CodedInputStream tmp2 = new CodedInputStream(&tmp);this.ExtensionMergePartialFromStream(tmp2);";
     rst ~= "}";
-    rst ~= "void MergeFrom(" ~ msg.full_name() ~ " from) {if(this == from) return; this = from ;}";
-    rst ~= "void MergeFrom(Message from){if(this == from) return;byte[] coded_tmp; coded_tmp.length = from.ByteSize();byte* code_ptr = coded_tmp.ptr; from.SerializeToBytes(code_ptr); ZeroCopyInputStream ztmp = new ZeroCopyInputStream(coded_tmp); CodedInputStream tmp = new CodedInputStream(&ztmp);this.MergePartialFromStream(tmp);}";
+    rst ~= "void MergeFrom(" ~ msg.full_name() ~ " from) {if(this == from) return;this = from ;}";
+    rst ~= "void MergeFrom(Message from){if(this == from) return;byte[] coded_tmp;coded_tmp.length = from.ByteSize();byte* code_ptr = coded_tmp.ptr;from.SerializeToBytes(code_ptr);ZeroCopyInputStream ztmp = new ZeroCopyInputStream(coded_tmp);CodedInputStream tmp = new CodedInputStream(&ztmp);this.MergePartialFromStream(tmp);}";
     return rst;
   }
   string genByteCount(Descriptor msg)
@@ -341,7 +347,7 @@ class CodeGen
             rst ~=  msg.field(i).name() ~ "[i].sizeof;";
           }
           rst ~= "}";
-          rst ~= "if(data_size >0) { cached_size += 1 + Int32Size(data_size) + data_size ;}";
+          rst ~= "if(data_size >0) {cached_size += 1 + Int32Size(data_size) + data_size ;}";
         } else {
           rst ~= "data_size += 1 +";
           if(sizefunc) {
@@ -465,6 +471,8 @@ class CodeGen
       }
     }
     rst ~= "}";
+    if(field.is_required())
+      rst ~="else {throw new Exception(\"lack field value.\");}";
     return rst;
   }
   string genReadCode(Descriptor msg)
@@ -496,9 +504,11 @@ class CodeGen
     } else {
       rst ~= FieldTypeToReadFunc(field.type, field.is_repeated, field.is_packed) ~ "(input," ~ field.name() ~ "_," ~ FieldTypeToString(field.type) ~ ");";
     }
-    rst ~= "} else { SkipField(input, tag, _unknown_fields);}";
+    rst ~= "}else{ SkipField(input, tag, _unknown_fields);}";
     return rst;
   }
+ private:
+  bool has_ext;
 }
 string getExtensionFunc(Descriptor msg)
 {

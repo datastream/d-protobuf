@@ -31,6 +31,10 @@ class Message : MessageLite
     {
         return _unknown_fields.ptr;
     }
+    void MergePartialFromStream(ref CodedInputStream input)
+    {
+      return;
+    }
     this()
     {
       super();

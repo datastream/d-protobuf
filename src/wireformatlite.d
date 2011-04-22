@@ -98,12 +98,12 @@ class WireFormatLite
     if(type == FieldType.TYPE_SINT32) {
       uint tmp;
       if(!input.ReadVarint32(tmp)) return false;
-      value = ZigZagDecode32(tmp);
+      value = cast(V)ZigZagDecode32(tmp);
     }
     if(type == FieldType.TYPE_SINT64) {
       ulong tmp;
       if(!input.ReadVarint64(tmp)) return false;
-      value = ZigZagDecode64(tmp);
+      value = cast(V)ZigZagDecode64(tmp);
     }
     if(type == FieldType.TYPE_FIXED32) {
       uint tmp;

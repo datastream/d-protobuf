@@ -1,25 +1,28 @@
 private import wireformatlite;
+private import wireformat;
 private import message;
 private import prototype;
 private import io;
 
-static ExtensionSet extensionset;
-class ExtensionIdentifier : WireFormatLite
+ExtensionSet extensionset;
+
+class ExtensionIdentifier : WireFormat
 {
-  this(Message owner, bool repeat, bool pack, FieldType type, int num, int value)
+  this(char[] owner, bool repeat, bool pack, FieldType type, int num, int value)
   {
     this.owner = owner;
     this.is_repeated = repeat;
     this.is_packed = pack;
     this.field_type = type;
     this.field_num = num;
-    if((field_type == FieldType.TYPE_INT32)||(field_type == FieldType.TYPE_SFIXED32)||(field_type == Field_Type.TYPE_SINT32))
+    if((field_type == FieldType.TYPE_INT32)||(field_type == FieldType.TYPE_SFIXED32)||(field_type == FieldType.TYPE_SINT32))
       default_int32 = value;
     if(field_type == FieldType.TYPE_ENUM)
       default_enum = value;
+    extensionset = new ExtensionSet;
     extensionset.AddExtension(&this);
   }
-  this(Message owner, bool repeat, bool pack, FieldType type, int num, uint value)
+  this(char[] owner, bool repeat, bool pack, FieldType type, int num, uint value)
   {
     this.owner = owner;
     this.is_repeated = repeat;
@@ -28,20 +31,22 @@ class ExtensionIdentifier : WireFormatLite
     this.field_num = num;
     if((field_type == FieldType.TYPE_UINT32)||(field_type == FieldType.TYPE_FIXED32))
       default_uint32 = value;
+    extensionset = new ExtensionSet;
     extensionset.AddExtension(&this);
   }
-  this(Message owner, bool repeat, bool pack, FieldType type, int num, long value)
+  this(char[] owner, bool repeat, bool pack, FieldType type, int num, long value)
   {
     this.owner = owner;
     this.is_repeated = repeat;
     this.is_packed = pack;
     this.field_type = type;
     this.field_num = num;
-    if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == Field_Type.TYPE_SINT64))
+    if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == FieldType.TYPE_SINT64))
       default_int64 = value;
+    extensionset = new ExtensionSet;
     extensionset.AddExtension(&this);
   }
-  this(Message owner, bool repeat, bool pack, FieldType type, int num, ulong value)
+  this(char[] owner, bool repeat, bool pack, FieldType type, int num, ulong value)
   {
     this.owner = owner;
     this.is_repeated = repeat;
@@ -50,9 +55,10 @@ class ExtensionIdentifier : WireFormatLite
     this.field_num = num;
     if((field_type == FieldType.TYPE_UINT64)||(field_type == FieldType.TYPE_FIXED64))
       default_uint64 = value;
+    extensionset = new ExtensionSet; 
     extensionset.AddExtension(&this);
   }
-  this(Message owner, bool repeat, bool pack, FieldType type, int num, float value)
+  this(char[] owner, bool repeat, bool pack, FieldType type, int num, float value)
   {
     this.owner = owner;
     this.is_repeated = repeat;
@@ -61,9 +67,10 @@ class ExtensionIdentifier : WireFormatLite
     this.field_num = num;
     if(field_type == FieldType.TYPE_FLOAT)
       default_float = value;
+    extensionset = new ExtensionSet;
     extensionset.AddExtension(&this);
   }
-  this(Message owner, bool repeat, bool pack, FieldType type, int num, double value)
+  this(char[] owner, bool repeat, bool pack, FieldType type, int num, double value)
   {
     this.owner = owner;
     this.is_repeated = repeat;
@@ -72,9 +79,10 @@ class ExtensionIdentifier : WireFormatLite
     this.field_num = num;
     if(field_type == FieldType.TYPE_DOUBLE)
       default_double = value;
+    extensionset = new ExtensionSet;
     extensionset.AddExtension(&this);
   }
-  this(Message owner, bool repeat, bool pack, FieldType type, int num, char[] value)
+  this(char[] owner, bool repeat, bool pack, FieldType type, int num, char[] value)
   {
     this.owner = owner;
     this.is_repeated = repeat;
@@ -83,9 +91,10 @@ class ExtensionIdentifier : WireFormatLite
     this.field_num = num;
     if(field_type == FieldType.TYPE_STRING)
       default_string = value;
+    extensionset = new ExtensionSet;
     extensionset.AddExtension(&this);
   }
-  this(Message owner, bool repeat, bool pack, FieldType type, int num, byte[] value)
+  this(char[] owner, bool repeat, bool pack, FieldType type, int num, byte[] value)
   {
     this.owner = owner;
     this.is_repeated = repeat;
@@ -94,9 +103,10 @@ class ExtensionIdentifier : WireFormatLite
     this.field_num = num;
     if(field_type == FieldType.TYPE_BYTES)
       default_bytes = value;
+    extensionset = new ExtensionSet;
     extensionset.AddExtension(&this);
   }
-  this(Message owner, bool repeat, bool pack, FieldType type, int num, Message value)
+  this(char[] owner, bool repeat, bool pack, FieldType type, int num, Message value)
   {
     this.owner = owner;
     this.is_repeated = repeat;
@@ -105,9 +115,10 @@ class ExtensionIdentifier : WireFormatLite
     this.field_num = num;
     if(field_type == FieldType.TYPE_MESSAGE)
       default_message = value;
+    extensionset = new ExtensionSet;
     extensionset.AddExtension(&this);
   }
-  this(Message owner, bool repeat, bool pack, FieldType type, int num, bool value)
+  this(char[] owner, bool repeat, bool pack, FieldType type, int num, bool value)
   {
     this.owner = owner;
     this.is_repeated = repeat;
@@ -116,15 +127,17 @@ class ExtensionIdentifier : WireFormatLite
     this.field_num = num;
     if(field_type == FieldType.TYPE_BOOL)
       default_bool = value;
+    extensionset = new ExtensionSet;
     extensionset.AddExtension(&this);
   }
-  this(Message owner, bool repeat, bool pack, FieldType type, int num)
+  this(char[] owner, bool repeat, bool pack, FieldType type, int num)
   {
     this.owner = owner;
     this.is_repeated = repeat;
     this.is_packed = pack;
     this.field_type = type;
     this.field_num = num;
+    extensionset = new ExtensionSet;
     extensionset.AddExtension(&this);
   }
   // Set value
@@ -132,7 +145,7 @@ class ExtensionIdentifier : WireFormatLite
   void Set(int value)
   {
     if(is_repeated) return;
-    if((field_type == FieldType.TYPE_INT32)||(field_type == FieldType.TYPE_SFIXED32)||(field_type == Field_Type.TYPE_SINT32))
+    if((field_type == FieldType.TYPE_INT32)||(field_type == FieldType.TYPE_SFIXED32)||(field_type == FieldType.TYPE_SINT32))
       int32_value = value;
     if(field_type == FieldType.TYPE_ENUM)
       enum_value = value;
@@ -146,7 +159,7 @@ class ExtensionIdentifier : WireFormatLite
   void Set(long value)
   {
     if(is_repeated) return;
-    if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == Field_Type.TYPE_SINT64))
+    if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == FieldType.TYPE_SINT64))
       int64_value = value;
   }
   void Set(ulong value)
@@ -195,7 +208,7 @@ class ExtensionIdentifier : WireFormatLite
   void Set(int[] values)
   {
     if(!is_repeated) return;
-    if((field_type == FieldType.TYPE_INT32)||(field_type == FieldType.TYPE_SFIXED32)||(field_type == Field_Type.TYPE_SINT32))
+    if((field_type == FieldType.TYPE_INT32)||(field_type == FieldType.TYPE_SFIXED32)||(field_type == FieldType.TYPE_SINT32))
       int32_values = values;
     if(field_type == FieldType.TYPE_ENUM)
       enum_values = values;
@@ -209,7 +222,7 @@ class ExtensionIdentifier : WireFormatLite
   void Set(long[] values)
   {
     if(!is_repeated) return;
-    if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == Field_Type.TYPE_SINT64))
+    if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == FieldType.TYPE_SINT64))
       int64_values = values;
   }
   void Set(ulong[] values)
@@ -258,7 +271,7 @@ class ExtensionIdentifier : WireFormatLite
   void Set(int value, int index)
   {
     if(!is_repeated) return;
-    if((field_type == FieldType.TYPE_INT32)||(field_type == FieldType.TYPE_SFIXED32)||(field_type == Field_Type.TYPE_SINT32))
+    if((field_type == FieldType.TYPE_INT32)||(field_type == FieldType.TYPE_SFIXED32)||(field_type == FieldType.TYPE_SINT32))
       if(int32_values.length < index)
         int32_values[index] = value;
     if(field_type == FieldType.TYPE_ENUM)
@@ -275,7 +288,7 @@ class ExtensionIdentifier : WireFormatLite
   void Set(long value, int index)
   {
     if(!is_repeated) return;
-    if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == Field_Type.TYPE_SINT64))
+    if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == FieldType.TYPE_SINT64))
       if(int64_values.length < index)
         int64_values[index] = value;
   }
@@ -332,7 +345,7 @@ class ExtensionIdentifier : WireFormatLite
   void Add(int value)
   {
     if(!is_repeated) return;
-    if((field_type == FieldType.TYPE_INT32)||(field_type == FieldType.TYPE_SFIXED32)||(field_type == Field_Type.TYPE_SINT32))
+    if((field_type == FieldType.TYPE_INT32)||(field_type == FieldType.TYPE_SFIXED32)||(field_type == FieldType.TYPE_SINT32))
       int32_values ~= value;
     if(field_type == FieldType.TYPE_ENUM)
       enum_values ~= value;
@@ -346,7 +359,7 @@ class ExtensionIdentifier : WireFormatLite
   void Add(long value)
   {
     if(!is_repeated) return;
-    if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == Field_Type.TYPE_SINT64))
+    if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == FieldType.TYPE_SINT64))
       int64_values ~= value;
   }
   void Add(ulong value)
@@ -395,7 +408,7 @@ class ExtensionIdentifier : WireFormatLite
   //type 1
   void Get(out int value)
   {
-    if((field_type == FieldType.TYPE_INT32)||(field_type == FieldType.TYPE_SFIXED32)||(field_type == Field_Type.TYPE_SINT32))
+    if((field_type == FieldType.TYPE_INT32)||(field_type == FieldType.TYPE_SFIXED32)||(field_type == FieldType.TYPE_SINT32))
       value = int32_value;
     if(field_type == FieldType.TYPE_ENUM)
       value = enum_value;
@@ -409,7 +422,7 @@ class ExtensionIdentifier : WireFormatLite
   void Get(out long value)
   {
     if(is_repeated) return;
-    if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == Field_Type.TYPE_SINT64))
+    if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == FieldType.TYPE_SINT64))
       value = int64_value;
   }
   void Get(out ulong value)
@@ -457,128 +470,128 @@ class ExtensionIdentifier : WireFormatLite
   //type 2
   void Get(out int[] values)
   {
-    if(!is_repeated) return null;
-    if((field_type == FieldType.TYPE_INT32)||(field_type == FieldType.TYPE_SFIXED32)||(field_type == Field_Type.TYPE_SINT32))
+    if(!is_repeated) return;
+    if((field_type == FieldType.TYPE_INT32)||(field_type == FieldType.TYPE_SFIXED32)||(field_type == FieldType.TYPE_SINT32))
       values =  int32_values;
     if(field_type == FieldType.TYPE_ENUM)
       values =  enum_values;
   }
   void Get(out uint[] values)
   {
-    if(!is_repeated) return null;
+    if(!is_repeated) return;
     if((field_type == FieldType.TYPE_UINT32)||(field_type == FieldType.TYPE_FIXED32))
       values =  uint32_values;
   }
   void Get(out long[] values)
   {
-    if(!is_repeated) return null;
-    if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == Field_Type.TYPE_SINT64))
+    if(!is_repeated) return;
+    if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == FieldType.TYPE_SINT64))
       values =  int64_values;
   }
   void Get(out ulong[] values)
   {
-    if(!is_repeated) return null;
+    if(!is_repeated) return;
     if((field_type == FieldType.TYPE_UINT64)||(field_type == FieldType.TYPE_FIXED64))
       values =  uint64_values;
   }
   void Get(out double[] values)
   {
-    if(!is_repeated) return null;
+    if(!is_repeated) return;
     if(field_type == FieldType.TYPE_DOUBLE)
       values =  double_values;
   }
   void Get(out float[] values)
   {
-    if(!is_repeated) return null;
+    if(!is_repeated) return;
     if(field_type == FieldType.TYPE_FLOAT)
       values =  float_values;
   }
   void Get(out bool[] values)
   {
-    if(!is_repeated) return null;
+    if(!is_repeated) return;
     if(field_type == FieldType.TYPE_BOOL)
       values =  bool_values;
   }
   void Get(out byte[][] values)
   {
-    if(!is_repeated) return null;
+    if(!is_repeated) return;
     if(field_type == FieldType.TYPE_BYTES)
       values =  bytes_values;
   }
   void Get(out char[][] values)
   {
-    if(!is_repeated) return null;
+    if(!is_repeated) return;
     if(field_type == FieldType.TYPE_STRING)
       values =  string_values;
   }
   void Get(out Message[] values)
   {
-    if(!is_repeated) return null;
+    if(!is_repeated) return;
     if(field_type == FieldType.TYPE_MESSAGE)
       values =  message_values;
   }
   //type 3
   void Get(out int value, int index)
   {
-    if(!is_repeated) return null;
-    if((field_type == FieldType.TYPE_INT32)||(field_type == FieldType.TYPE_SFIXED32)||(field_type == Field_Type.TYPE_SINT32))
-      return int32_value;
+    if(!is_repeated) return;
+    if((field_type == FieldType.TYPE_INT32)||(field_type == FieldType.TYPE_SFIXED32)||(field_type == FieldType.TYPE_SINT32))
+      value = int32_value;
     if(field_type == FieldType.TYPE_ENUM)
-      return enum_value;
+      value = enum_value;
   }
   void Get(out uint value, int index)
   {
-    if(!is_repeated) return null;
+    if(!is_repeated) return;
     if((field_type == FieldType.TYPE_UINT32)||(field_type == FieldType.TYPE_FIXED32))
-      return uint32_values[index];
+      value = uint32_values[index];
   }
   void Get(out long value, int index)
   {
-    if(!is_repeated) return null;
-    if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == Field_Type.TYPE_SINT64))
-      return int64_values[index];
+    if(!is_repeated) return;
+    if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == FieldType.TYPE_SINT64))
+      value = int64_values[index];
   }
   void Get(out ulong value, int index)
   {
-    if(!is_repeated) return null;
+    if(!is_repeated) return;
     if((field_type == FieldType.TYPE_UINT64)||(field_type == FieldType.TYPE_FIXED64))
-      return uint64_values[index];
+      value = uint64_values[index];
   }
   void Get(out double value, int index)
   {
-    if(!is_repeated) return null;
+    if(!is_repeated) return;
     if(field_type == FieldType.TYPE_DOUBLE)
-      return double_values[index];
+      value = double_values[index];
   }
   void Get(out float value, int index)
   {
-    if(!is_repeated) return null;
+    if(!is_repeated) return;
     if(field_type == FieldType.TYPE_FLOAT)
-      return float_values[index];
+      value = float_values[index];
   }
   void Get(out bool value, int index)
   {
-    if(!is_repeated) return null;
+    if(!is_repeated) return;
     if(field_type == FieldType.TYPE_BOOL)
-      return bool_values[index];
+      value = bool_values[index];
   }
   void Get(out byte[] value, int index)
   {
-    if(!is_repeated) return null;
+    if(!is_repeated) return;
     if(field_type == FieldType.TYPE_BYTES)
-      return bytes_values[index];
+      value = bytes_values[index];
   }
   void Get(out char[] value, int index)
   {
-    if(!is_repeated) return null;
+    if(!is_repeated) return;
     if(field_type == FieldType.TYPE_STRING)
-      return string_values[index];
+      value = string_values[index];
   }
   void Get(out Message value, int index)
   {
-    if(!is_repeated) return null;
+    if(!is_repeated) return;
     if(field_type == FieldType.TYPE_MESSAGE)
-      return message_values[index];
+      value = message_values[index];
   }
   void Serialize(ref CodedOutputStream output)
   {
@@ -591,10 +604,10 @@ class ExtensionIdentifier : WireFormatLite
             for(int i = 0; i < int32_values.length ;i ++) {
               len += Int32Size(int32_values[i]);
             }
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < int32_values.length; i++) {
-              WriteInt32NoTag(int32_values[i]);
+              WriteInt32NoTag(int32_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < int32_values.length; i++) {
@@ -612,10 +625,10 @@ class ExtensionIdentifier : WireFormatLite
             for(int i = 0; i < uint32_values.length ; i++) {
               len += UInt32Size(uint32_values[i]);
             }
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < uint32_values.length; i++) {
-              WriteUInt32NoTag(uint32_values[i]);
+              WriteUInt32NoTag(uint32_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < uint32_values.length; i++) {
@@ -633,10 +646,10 @@ class ExtensionIdentifier : WireFormatLite
             for(int i = 0; i < int32_values.length ; i++) {
               len += SInt32Size(int32_values[i]);
             }
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < int32_values.length; i++) {
-              WriteSInt32NoTag(int32_values[i]);
+              WriteSInt32NoTag(int32_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < int32_values.length; i++) {
@@ -652,10 +665,10 @@ class ExtensionIdentifier : WireFormatLite
           if(is_packed) {
             int len;
             len += uint32_values.length * uint32_values[0].sizeof;
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < uint32_values.length; i++) {
-              WriteFixed32NoTag(uint32_values[i]);
+              WriteFixed32NoTag(uint32_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < uint32_values.length; i++) {
@@ -671,10 +684,10 @@ class ExtensionIdentifier : WireFormatLite
           if(is_packed) {
             int len;
             len += int32_values.length * int32_values[0].sizeof;
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < int32_values.length; i++) {
-              WriteSFixed32NoTag(int32_values[i]);
+              WriteSFixed32NoTag(int32_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < int32_values.length; i++) {
@@ -692,10 +705,10 @@ class ExtensionIdentifier : WireFormatLite
             for(int i = 0; i < int64_values.length ; i++) {
               len += Int64Size(int64_values[i]);
             }
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < int64_values.length; i++) {
-              WriteInt64NoTag(int64_values[i]);
+              WriteInt64NoTag(int64_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < int64_values.length; i++) {
@@ -713,10 +726,10 @@ class ExtensionIdentifier : WireFormatLite
             for(int i = 0; i < uint64_values.length ; i++) {
               len += UInt64Size(uint64_values[i]);
             }
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < uint64_values.length; i++) {
-              WriteUInt64NoTag(uint64_values[i]);
+              WriteUInt64NoTag(uint64_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < uint64_values.length; i++) {
@@ -734,10 +747,10 @@ class ExtensionIdentifier : WireFormatLite
             for(int i = 0; i < int64_values.length; i++) {
               len += SInt64Size(int64_values[i]);
             }
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < int64_values.length; i++) {
-              WriteSInt64NoTag(int64_values[i]);
+              WriteSInt64NoTag(int64_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < int32_values.length; i++) {
@@ -753,10 +766,10 @@ class ExtensionIdentifier : WireFormatLite
           if(is_packed) {
             int len;
             len += uint64_values.length * uint64_values[0].sizeof;
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < uint64_values.length; i++) {
-              WriteFixed64NoTag(uint64_values[i]);
+              WriteFixed64NoTag(uint64_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < uint64_values.length; i++) {
@@ -772,10 +785,10 @@ class ExtensionIdentifier : WireFormatLite
           if(is_packed) {
             int len;
             len += int64_values.length * int64_values[0].sizeof;
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < int64_values.length; i++) {
-              WriteSFixed64NoTag(int64_values[i]);
+              WriteSFixed64NoTag(int64_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < int64_values.length; i++) {
@@ -791,10 +804,10 @@ class ExtensionIdentifier : WireFormatLite
           if(is_packed) {
             int len;
             len += double_values.length * double_values[0].sizeof;
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < double_values.length; i++) {
-              WriteDoubleNoTag(double_values[i]);
+              WriteDoubleNoTag(double_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < double_values.length; i++) {
@@ -810,10 +823,10 @@ class ExtensionIdentifier : WireFormatLite
           if(is_packed) {
             int len;
             len += float_values.length*float_values[0].sizeof;
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < float_values.length; i++) {
-              WriteFloatNoTag(float_values[i]);
+              WriteFloatNoTag(float_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < float_values.length; i++) {
@@ -831,10 +844,10 @@ class ExtensionIdentifier : WireFormatLite
             for(int i = 0; i < enum_values.length ;i ++) {
               len += Int32Size(enum_values[i]);
             }
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < enum_values.length; i++) {
-              WriteInt32NoTag(enum_values[i]);
+              WriteInt32NoTag(enum_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < enum_values.length; i++) {
@@ -852,10 +865,10 @@ class ExtensionIdentifier : WireFormatLite
             for(int i = 0; i < bool_values.length ;i ++) {
               len += UInt32Size(bool_values[i]?1:0);
             }
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < bool_values.length; i++) {
-              WriteBoolNoTag(bool_values[i]);
+              WriteBoolNoTag(bool_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < bool_values.length; i++) {
@@ -871,12 +884,12 @@ class ExtensionIdentifier : WireFormatLite
           if(is_packed) {
             uint len;
             for(int i = 0; i < bytes_values.length ;i ++) {
-              len += ByteSize(bytes_values[i]);
+              len += BytesSize(cast(char[])bytes_values[i]);
             }
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < bytes_values.length; i++) {
-              WriteBytesNoTag(bytes_values[i]);
+              WriteBytesNoTag(bytes_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < bytes_values.length; i++) {
@@ -894,10 +907,10 @@ class ExtensionIdentifier : WireFormatLite
             for(int i = 0; i < string_values.length ;i ++) {
               len += StringSize(string_values[i]);
             }
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < string_values.length; i++) {
-              WriteStringNoTag(string_values[i]);
+              WriteStringNoTag(string_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < string_values.length; i++) {
@@ -915,10 +928,10 @@ class ExtensionIdentifier : WireFormatLite
             for(int i = 0; i < message_values.length ;i ++) {
               len += MessageSize(message_values[i]);
             }
-            WriteTag(field_number, WireType.WIRETYPE_LENGTH_DELIMITED, output);
+            WriteTag(field_num, WireType.WIRETYPE_LENGTH_DELIMITED, output);
             output.WriteVarint32(len);
             for(int i = 0; i < message_values.length; i++) {
-              WriteMessageNoTag(message_values[i]);
+              WriteMessageNoTag(message_values[i], output);
             }
           } else if(is_repeated) {
             for(int i = 0; i < message_values.length; i++) {
@@ -943,9 +956,9 @@ class ExtensionIdentifier : WireFormatLite
             if(is_packed) {
               ReadPackedPrimitive!(int)(UInt32Size(tag), tag, input, int32_values, FieldType.TYPE_INT32);
             } else if(is_repeated) {
-              ReadRepeatedPrimitive!(int)(UInt32Size(tag), tag, input, int32_values, FieldType.TYPE_INT32);
+              ReadRepeatedPrimitive!(int)(input, int32_values, FieldType.TYPE_INT32);
             } else {
-              ReadPrimitive!(int)(UInt32Size(tag), tag, input, int32_value, FieldType.TYPE_INT32);
+              ReadPrimitive!(int)(input, int32_value, FieldType.TYPE_INT32);
             }
             break;
           }
@@ -954,9 +967,9 @@ class ExtensionIdentifier : WireFormatLite
             if(is_packed) {
               ReadPackedPrimitive!(uint)(UInt32Size(tag), tag, input, uint32_values, FieldType.TYPE_UINT32);
             } else if(is_repeated) {
-              ReadRepeatedPrimitive!(uint)(UInt32Size(tag), tag, input, uint32_values, FieldType.TYPE_UINT32);
+              ReadRepeatedPrimitive!(uint)(input, uint32_values, FieldType.TYPE_UINT32);
             } else {
-              ReadPrimitive!(uint)(UInt32Size(tag), tag, input, uint32_value, FieldType.TYPE_UINT32);
+              ReadPrimitive!(uint)(input, uint32_value, FieldType.TYPE_UINT32);
             }
             break;
           }
@@ -965,9 +978,9 @@ class ExtensionIdentifier : WireFormatLite
             if(is_packed) {
               ReadPackedPrimitive!(int)(UInt32Size(tag), tag, input, int32_values, FieldType.TYPE_SINT32);
             } else if(is_repeated) {
-              ReadRepeatedPrimitive!(int)(UInt32Size(tag), tag, input, int32_values, FieldType.TYPE_SINT32);
+              ReadRepeatedPrimitive!(int)(input, int32_values, FieldType.TYPE_SINT32);
             } else {
-              ReadPrimitive!(int)(UInt32Size(tag), tag, input, int32_value, FieldType.TYPE_SINT32);
+              ReadPrimitive!(int)(input, int32_value, FieldType.TYPE_SINT32);
             }
             break;
           }
@@ -976,9 +989,9 @@ class ExtensionIdentifier : WireFormatLite
             if(is_packed) {
               ReadPackedPrimitive!(uint)(UInt32Size(tag), tag, input, uint32_values, FieldType.TYPE_FIXED32);
             } else if(is_repeated) {
-              ReadRepeatedPrimitive!(uint)(UInt32Size(tag), tag, input, uint32_values, FieldType.TYPE_FIXED32);
+              ReadRepeatedPrimitive!(uint)(input, uint32_values, FieldType.TYPE_FIXED32);
             } else {
-              ReadPrimitive!(uint)(UInt32Size(tag), tag, input, uint32_value, FieldType.TYPE_FIXED32);
+              ReadPrimitive!(uint)(input, uint32_value, FieldType.TYPE_FIXED32);
             }
             break;
           }
@@ -987,64 +1000,64 @@ class ExtensionIdentifier : WireFormatLite
             if(is_packed) {
               ReadPackedPrimitive!(int)(UInt32Size(tag), tag, input, int32_values, FieldType.TYPE_SFIXED32);
             } else if(is_repeated) {
-              ReadRepeatedPrimitive!(int)(UInt32Size(tag), tag, input, int32_values, FieldType.TYPE_SFIXED32);
+              ReadRepeatedPrimitive!(int)(input, int32_values, FieldType.TYPE_SFIXED32);
             } else {
-              ReadPrimitive!(int)(UInt32Size(tag), tag, input, int32_value, FieldType.TYPE_SFIXED32);
+              ReadPrimitive!(int)(input, int32_value, FieldType.TYPE_SFIXED32);
             }
             break;
           }
         case FieldType.TYPE_INT64:
           {
             if(is_packed) {
-              ReadPackedPrimitive!(int)(UInt32Size(tag), tag, input, int64_values, FieldType.TYPE_INT64);
+              ReadPackedPrimitive!(long)(UInt32Size(tag), tag, input, int64_values, FieldType.TYPE_INT64);
             } else if(is_repeated) {
-              ReadRepeatedPrimitive!(int)(UInt32Size(tag), tag, input, int64_values, FieldType.TYPE_INT64);
+              ReadRepeatedPrimitive!(long)(input, int64_values, FieldType.TYPE_INT64);
             } else {
-              ReadPrimitive!(int)(UInt32Size(tag), tag, input, int64_value, FieldType.TYPE_INT64);
+              ReadPrimitive!(long)(input, int64_value, FieldType.TYPE_INT64);
             }
             break;
           }
         case FieldType.TYPE_UINT64:
           {
             if(is_packed) {
-              ReadPackedPrimitive!(uint)(UInt32Size(tag), tag, uinput, int64_values, FieldType.TYPE_UINT64);
+              ReadPackedPrimitive!(ulong)(UInt32Size(tag), tag, input, uint64_values, FieldType.TYPE_UINT64);
             } else if(is_repeated) {
-              ReadRepeatedPrimitive!(uint)(UInt32Size(tag), tag, uinput, int64_values, FieldType.TYPE_UINT64);
+              ReadRepeatedPrimitive!(ulong)(input, uint64_values, FieldType.TYPE_UINT64);
             } else {
-              ReadPrimitive!(uint)(UInt32Size(tag), tag, input, uint64_value, FieldType.TYPE_UINT64);
+              ReadPrimitive!(ulong)(input, uint64_value, FieldType.TYPE_UINT64);
             }
             break;
           }
         case FieldType.TYPE_SINT64:
           {
             if(is_packed) {
-              ReadPackedPrimitive!(int)(UInt32Size(tag), tag, input, int64_values, FieldType.TYPE_SINT64);
+              ReadPackedPrimitive!(long)(UInt32Size(tag), tag, input, int64_values, FieldType.TYPE_SINT64);
             } else if(is_repeated) {
-              ReadRepeatedPrimitive!(int)(UInt32Size(tag), tag, input, int64_values, FieldType.TYPE_SINT64);
+              ReadRepeatedPrimitive!(long)(input, int64_values, FieldType.TYPE_SINT64);
             } else {
-              ReadPrimitive!(int)(UInt32Size(tag), tag, input, int64_value, FieldType.TYPE_SINT64);
+              ReadPrimitive!(long)(input, int64_value, FieldType.TYPE_SINT64);
             }
             break;
           }
         case FieldType.TYPE_FIXED64:
           {
             if(is_packed) {
-              ReadPackedPrimitive!(uint)(UInt32Size(tag), tag, uinput, int64_values, FieldType.TYPE_FIXED64);
+              ReadPackedPrimitive!(ulong)(UInt32Size(tag), tag, input, uint64_values, FieldType.TYPE_FIXED64);
             } else if(is_repeated) {
-              ReadRepeatedPrimitive!(uint)(UInt32Size(tag), tag, uinput, int64_values, FieldType.TYPE_FIXED64);
+              ReadRepeatedPrimitive!(ulong)(input, uint64_values, FieldType.TYPE_FIXED64);
             } else {
-              ReadPrimitive!(uint)(UInt32Size(tag), tag, input, uint64_value, FieldType.TYPE_FIXED64);
+              ReadPrimitive!(ulong)(input, uint64_value, FieldType.TYPE_FIXED64);
             }
             break;
           }
         case FieldType.TYPE_SFIXED64:
           {
             if(is_packed) {
-              ReadPackedPrimitive!(int)(UInt32Size(tag), tag, input, int64_values, FieldType.TYPE_SFIXED64);
+              ReadPackedPrimitive!(long)(UInt32Size(tag), tag, input, int64_values, FieldType.TYPE_SFIXED64);
             } else if(is_repeated) {
-              ReadRepeatedPrimitive!(int)(UInt32Size(tag), tag, input, int64_values, FieldType.TYPE_SFIXED64);
+              ReadRepeatedPrimitive!(long)(input, int64_values, FieldType.TYPE_SFIXED64);
             } else {
-              ReadPrimitive!(int)(UInt32Size(tag), tag, input, int64_value, FieldType.TYPE_SFIXED64);
+              ReadPrimitive!(long)(input, int64_value, FieldType.TYPE_SFIXED64);
             }
             break;
           }
@@ -1053,9 +1066,9 @@ class ExtensionIdentifier : WireFormatLite
             if(is_packed) {
               ReadPackedPrimitive!(double)(UInt32Size(tag), tag, input, double_values, FieldType.TYPE_DOUBLE);
             } else if(is_repeated) {
-              ReadRepeatedPrimitive!(double)(UInt32Size(tag), tag, input, double_values, FieldType.TYPE_DOUBLE);
+              ReadRepeatedPrimitive!(double)(input, double_values, FieldType.TYPE_DOUBLE);
             } else {
-              ReadPrimitive!(double)(UInt32Size(tag), tag, input, double_value, FieldType.TYPE_DOUBLE);
+              ReadPrimitive!(double)(input, double_value, FieldType.TYPE_DOUBLE);
             }
             break;
           }
@@ -1064,9 +1077,9 @@ class ExtensionIdentifier : WireFormatLite
             if(is_packed) {
               ReadPackedPrimitive!(float)(UInt32Size(tag), tag, input, float_values, FieldType.TYPE_FLOAT);
             } else if(is_repeated) {
-              ReadRepeatedPrimitive!(float)(UInt32Size(tag), tag, input, float_values, FieldType.TYPE_FLOAT);
+              ReadRepeatedPrimitive!(float)(input, float_values, FieldType.TYPE_FLOAT);
             } else {
-              ReadPrimitive!(float)(UInt32Size(tag), tag, input, float_value, FieldType.TYPE_FLOAT);
+              ReadPrimitive!(float)(input, float_value, FieldType.TYPE_FLOAT);
             }
             break;
           }
@@ -1075,9 +1088,9 @@ class ExtensionIdentifier : WireFormatLite
             if(is_packed) {
               ReadPackedPrimitive!(bool)(UInt32Size(tag), tag, input, bool_values, FieldType.TYPE_BOOL);
             } else if(is_repeated) {
-              ReadRepeatedPrimitive!(bool)(UInt32Size(tag), tag, input, bool_values, FieldType.TYPE_BOOL);
+              ReadRepeatedPrimitive!(bool)(input, bool_values, FieldType.TYPE_BOOL);
             } else {
-              ReadPrimitive!(bool)(UInt32Size(tag), tag, input, bool_value, FieldType.TYPE_BOOL);
+              ReadPrimitive!(bool)(input, bool_value, FieldType.TYPE_BOOL);
             }
             break;
           }
@@ -1086,42 +1099,42 @@ class ExtensionIdentifier : WireFormatLite
             if(is_packed) {
               ReadPackedPrimitive!(int)(UInt32Size(tag), tag, input, enum_values, FieldType.TYPE_ENUM);
             } else if(is_repeated) {
-              ReadRepeatedPrimitive!(int)(UInt32Size(tag), tag, input, enum_values, FieldType.TYPE_ENUM);
+              ReadRepeatedPrimitive!(int)(input, enum_values, FieldType.TYPE_ENUM);
             } else {
-              ReadPrimitive!(int)(UInt32Size(tag), tag, input, enum_value, FieldType.TYPE_ENUM);
+              ReadPrimitive!(int)(input, enum_value, FieldType.TYPE_ENUM);
             }
             break;
           }
         case FieldType.TYPE_BYTES:
           {
             if(is_packed) {
-              ReadPackedBytes(UInt32Size(tag), tag, input, bytes_values, FieldType.TYPE_BYTES);
+              ReadPackedBytes(input, bytes_values, FieldType.TYPE_BYTES);
             } else if(is_repeated) {
-              ReadRepeatedBytes(UInt32Size(tag), tag, input, bytes_values, FieldType.TYPE_BYTES);
+              ReadRepeatedBytes(input, bytes_values, FieldType.TYPE_BYTES);
             } else {
-              ReadBytes(UInt32Size(tag), tag, input, bytes_value, FieldType.TYPE_BYTES);
+              ReadBytes(input, bytes_value, FieldType.TYPE_BYTES);
             }
             break;
           }
         case FieldType.TYPE_STRING:
           {
             if(is_packed) {
-              ReadPackedString(UInt32Size(tag), tag, input, string_values, FieldType.TYPE_STRING);
+              ReadPackedString(input, string_values, FieldType.TYPE_STRING);
             } else if(is_repeated) {
-              ReadRepeatedString(UInt32Size(tag), tag, input, string_values, FieldType.TYPE_STRING);
+              ReadRepeatedString(input, string_values, FieldType.TYPE_STRING);
             } else {
-              ReadString(UInt32Size(tag), tag, input, string_value, FieldType.TYPE_STRING);
+              ReadString(input, string_value, FieldType.TYPE_STRING);
             }
             break;
           }
         case FieldType.TYPE_MESSAGE:
           {
             if(is_packed) {
-              ReadPackedMessage(UInt32Size(tag), tag, input, message_values, FieldType.TYPE_MESSAGE);
+              ReadPackedMessageNoVirtual(input, message_values, FieldType.TYPE_MESSAGE);
             } else if(is_repeated) {
-              ReadRepeatedMessage(UInt32Size(tag), tag, input, message_values, FieldType.TYPE_MESSAGE);
+              ReadRepeatedMessageNoVirtual(input, message_values, FieldType.TYPE_MESSAGE);
             } else {
-              ReadMessage(UInt32Size(tag), tag, input, message_value, FieldType.TYPE_MESSAGE);
+              ReadMessageNoVirtual(input, message_value, FieldType.TYPE_MESSAGE);
             }
             break;
           }
@@ -1129,7 +1142,7 @@ class ExtensionIdentifier : WireFormatLite
     }
   }
 private:
-  Message owner;
+  char[] owner;
   bool is_repeated;
   bool is_packed;
   FieldType field_type;
@@ -1178,7 +1191,7 @@ class ExtensionSet
   {
     for(int i = 0; i < exts.length; i++)
     {
-      if((extid.owner.classinfo.name = exts[i].owner.classinfo.name) && (extid.field_num == exts[i].field_num))
+      if((extid.owner == exts[i].owner) && (extid.field_num == exts[i].field_num))
         return exts[i];
     }
   }
@@ -1187,16 +1200,16 @@ class ExtensionSet
     ExtensionIdentifier*[] rst;
     for(int i = 0; i < exts.length; i++)
     {
-      if((extid.owner.classinfo.name = exts[i].owner.classinfo.name))
+      if((containing_type.classinfo.name == exts[i].owner))
         rst ~= exts[i];
     }
     return rst;
   }
-  bool HasExtension(ExtensionIdentifier extid)
+  bool HasExtension(ExtensionIdentifier* extid)
   {
     for(int i = 0; i < exts.length; i++)
     {
-      if((extid.owner.classinfo.name = exts[i].owner.classinfo.name) && (extid.field_num == exts[i].field_num))
+      if((extid.owner == exts[i].owner) && (extid.field_num == exts[i].field_num))
         return true;
     }
     return false;
@@ -1382,129 +1395,189 @@ template Ext()
   // type 1
   int GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    int value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   uint GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    uint value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   long GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    long value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   ulong GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    ulong value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   double GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    double value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   float GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    float value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   byte[] GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    byte[] value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   char[] GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    char[] value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   bool GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    bool value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   Message GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    Message value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   //type 2
   int[] GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    int[] value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   uint[] GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    uint[] value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   long[] GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    long[] value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   ulong[] GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    ulong[] value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   double[] GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    double[] value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   float[] GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    float[] value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   byte[][] GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    byte[][] value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   char[][] GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    char[][] value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   bool[] GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    bool[] value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   Message[] GetExtension(ref ExtensionIdentifier extid)
   {
-    return extensionset.Find(extid).Get();
+    Message[] value;
+    extensionset.Find(extid).Get(value);
+    return value;
   }
   //type 3
   int GetExtension(ref ExtensionIdentifier extid, int index)
   {
-    return extensionset.Find(extid).Get(index);
+    int value;
+    extensionset.Find(extid).Get(value, index);
+    return value;
   }
   uint GetExtension(ref ExtensionIdentifier extid, int index)
   {
-    return extensionset.Find(extid).Get(index);
+    uint value;
+    extensionset.Find(extid).Get(value, index);
+    return value;
   }
   long GetExtension(ref ExtensionIdentifier extid, int index)
   {
-    return extensionset.Find(extid).Get(index);
+    long value;
+    extensionset.Find(extid).Get(value, index);
+    return value;
   }
   ulong GetExtension(ref ExtensionIdentifier extid, int index)
   {
-    return extensionset.Find(extid).Get(index);
+    ulong value;
+    extensionset.Find(extid).Get(value, index);
+    return value;
   }
   double GetExtension(ref ExtensionIdentifier extid, int index)
   {
-    return extensionset.Find(extid).Get(index);
+    double value;
+    extensionset.Find(extid).Get(value, index);
+    return value;
   }
   float GetExtension(ref ExtensionIdentifier extid, int index)
   {
-    return extensionset.Find(extid).Get(index);
+    float value;
+    extensionset.Find(extid).Get(value, index);
+    return value;
   }
   byte[] GetExtension(ref ExtensionIdentifier extid, int index)
   {
-    return extensionset.Find(extid).Get(index);
+    byte[] value;
+    extensionset.Find(extid).Get(value, index);
+    return value;
   }
   char[] GetExtension(ref ExtensionIdentifier extid, int index)
   {
-    return extensionset.Find(extid).Get(index);
+    char[] value;
+    extensionset.Find(extid).Get(value, index);
+    return value;
   }
   bool GetExtension(ref ExtensionIdentifier extid, int index)
   {
-    return extensionset.Find(extid).Get(index);
+    bool value;
+    extensionset.Find(extid).Get(value, index);
+    return value;
   }
   Message GetExtension(ref ExtensionIdentifier extid, int index)
   {
-    return extensionset.Find(extid).Get(index);
+    Message value;
+    extensionset.Find(extid).Get(value, index);
+    return value;
   }
   void SerializeExtension(ref CodedOutputStream output)
   {
-    ExtensionIdentifier*[] elements = extensionset.isClass(this);
+    ExtensionIdentifier*[] elements = extensionset.IsClass(this);
     for(int i = 0; i < elements.length; i++)
     {
       elements[i].Serialize(output);

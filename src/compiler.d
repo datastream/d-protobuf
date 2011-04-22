@@ -14,7 +14,7 @@ void main(char[][] args)
         Stdout("no input files").newline;
         return ;
     }
-    auto logger = Log.lookup("protobuf.log");
+    auto logger = Log.lookup("protobuf");
     try 
     {
         PreProcessor a = new PreProcessor(args[1]);
