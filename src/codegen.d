@@ -87,7 +87,7 @@ class CodeGen
     if(msg.extension_range_count()>0)
     {
       has_ext = true;
-      rst ~="void SerializeExtension(ref CodedOutputStream output){ExtensionIdentifier*[] elements = extensionset.IsClass(this);for(int i = 0; i < elements.length; i++){elements[i].Serialize(output);}}void ExtensionMergePartialFromStream(ref CodedInputStream input){ExtensionIdentifier*[] elements = extensionset.IsClass(this);for(int i = 0; i < elements.length; i++){elements[i].MergePartialFromStream(input);}}";
+      rst ~="void SerializeExtension(ref CodedOutputStream output){ExtensionIdentifier[] elements = extensionset.IsClass(this);for(int i = 0; i < elements.length; i++){elements[i].Serialize(output);}}void ExtensionMergePartialFromStream(ref CodedInputStream input){ExtensionIdentifier[] elements = extensionset.IsClass(this);for(int i = 0; i < elements.length; i++){elements[i].MergePartialFromStream(input);}}";
       rst ~= getExtensionFunc(msg);
     }
     rst ~= genCodeFunc(msg);
@@ -513,6 +513,6 @@ class CodeGen
 string getExtensionFunc(Descriptor msg)
 {
   string rst;
-  rst ~="mixin Ext;";
+  rst ~= "mixin Ext;";
   return rst;
 }

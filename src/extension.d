@@ -19,8 +19,8 @@ class ExtensionIdentifier : WireFormat
       default_int32 = value;
     if(field_type == FieldType.TYPE_ENUM)
       default_enum = value;
-    extensionset = new ExtensionSet;
-    extensionset.AddExtension(&this);
+    extensionset = ExtensionSet.instanse;
+    extensionset.AddExtension(this);
   }
   this(char[] owner, bool repeat, bool pack, FieldType type, int num, uint value)
   {
@@ -31,8 +31,8 @@ class ExtensionIdentifier : WireFormat
     this.field_num = num;
     if((field_type == FieldType.TYPE_UINT32)||(field_type == FieldType.TYPE_FIXED32))
       default_uint32 = value;
-    extensionset = new ExtensionSet;
-    extensionset.AddExtension(&this);
+    extensionset = ExtensionSet.instanse;
+    extensionset.AddExtension(this);
   }
   this(char[] owner, bool repeat, bool pack, FieldType type, int num, long value)
   {
@@ -43,8 +43,8 @@ class ExtensionIdentifier : WireFormat
     this.field_num = num;
     if((field_type == FieldType.TYPE_INT64)||(field_type == FieldType.TYPE_SFIXED64)||(field_type == FieldType.TYPE_SINT64))
       default_int64 = value;
-    extensionset = new ExtensionSet;
-    extensionset.AddExtension(&this);
+    extensionset = ExtensionSet.instanse;
+    extensionset.AddExtension(this);
   }
   this(char[] owner, bool repeat, bool pack, FieldType type, int num, ulong value)
   {
@@ -55,8 +55,8 @@ class ExtensionIdentifier : WireFormat
     this.field_num = num;
     if((field_type == FieldType.TYPE_UINT64)||(field_type == FieldType.TYPE_FIXED64))
       default_uint64 = value;
-    extensionset = new ExtensionSet; 
-    extensionset.AddExtension(&this);
+    extensionset = ExtensionSet.instanse; 
+    extensionset.AddExtension(this);
   }
   this(char[] owner, bool repeat, bool pack, FieldType type, int num, float value)
   {
@@ -67,8 +67,8 @@ class ExtensionIdentifier : WireFormat
     this.field_num = num;
     if(field_type == FieldType.TYPE_FLOAT)
       default_float = value;
-    extensionset = new ExtensionSet;
-    extensionset.AddExtension(&this);
+    extensionset = ExtensionSet.instanse;
+    extensionset.AddExtension(this);
   }
   this(char[] owner, bool repeat, bool pack, FieldType type, int num, double value)
   {
@@ -79,8 +79,8 @@ class ExtensionIdentifier : WireFormat
     this.field_num = num;
     if(field_type == FieldType.TYPE_DOUBLE)
       default_double = value;
-    extensionset = new ExtensionSet;
-    extensionset.AddExtension(&this);
+    extensionset = ExtensionSet.instanse;
+    extensionset.AddExtension(this);
   }
   this(char[] owner, bool repeat, bool pack, FieldType type, int num, char[] value)
   {
@@ -91,8 +91,8 @@ class ExtensionIdentifier : WireFormat
     this.field_num = num;
     if(field_type == FieldType.TYPE_STRING)
       default_string = value;
-    extensionset = new ExtensionSet;
-    extensionset.AddExtension(&this);
+    extensionset = ExtensionSet.instanse;
+    extensionset.AddExtension(this);
   }
   this(char[] owner, bool repeat, bool pack, FieldType type, int num, byte[] value)
   {
@@ -103,8 +103,8 @@ class ExtensionIdentifier : WireFormat
     this.field_num = num;
     if(field_type == FieldType.TYPE_BYTES)
       default_bytes = value;
-    extensionset = new ExtensionSet;
-    extensionset.AddExtension(&this);
+    extensionset = ExtensionSet.instanse;
+    extensionset.AddExtension(this);
   }
   this(char[] owner, bool repeat, bool pack, FieldType type, int num, Message value)
   {
@@ -115,8 +115,8 @@ class ExtensionIdentifier : WireFormat
     this.field_num = num;
     if(field_type == FieldType.TYPE_MESSAGE)
       default_message = value;
-    extensionset = new ExtensionSet;
-    extensionset.AddExtension(&this);
+    extensionset = ExtensionSet.instanse;
+    extensionset.AddExtension(this);
   }
   this(char[] owner, bool repeat, bool pack, FieldType type, int num, bool value)
   {
@@ -127,8 +127,8 @@ class ExtensionIdentifier : WireFormat
     this.field_num = num;
     if(field_type == FieldType.TYPE_BOOL)
       default_bool = value;
-    extensionset = new ExtensionSet;
-    extensionset.AddExtension(&this);
+    extensionset = ExtensionSet.instanse;
+    extensionset.AddExtension(this);
   }
   this(char[] owner, bool repeat, bool pack, FieldType type, int num)
   {
@@ -137,8 +137,8 @@ class ExtensionIdentifier : WireFormat
     this.is_packed = pack;
     this.field_type = type;
     this.field_num = num;
-    extensionset = new ExtensionSet;
-    extensionset.AddExtension(&this);
+    extensionset = ExtensionSet.instanse;
+    extensionset.AddExtension(this);
   }
   // Set value
   // type 1
@@ -1185,19 +1185,31 @@ private:
     Message[] message_values;    
   }
 }
+import tango.io.Stdout;
 class ExtensionSet
 {
-  ExtensionIdentifier* Find(ExtensionIdentifier extid)
+  static ExtensionSet instanse()
+  {
+    if(_set is null) {
+      _set = new ExtensionSet;
+    }
+    return _set;
+  }
+  protected this()
+  {
+  }
+  ExtensionIdentifier Find(ExtensionIdentifier extid)
   {
     for(int i = 0; i < exts.length; i++)
     {
       if((extid.owner == exts[i].owner) && (extid.field_num == exts[i].field_num))
         return exts[i];
     }
+    return null;
   }
-  ExtensionIdentifier*[] IsClass(Message containing_type)
+  ExtensionIdentifier[] IsClass(Message containing_type)
   {
-    ExtensionIdentifier*[] rst;
+    ExtensionIdentifier[] rst;
     for(int i = 0; i < exts.length; i++)
     {
       if((containing_type.classinfo.name == exts[i].owner))
@@ -1205,7 +1217,7 @@ class ExtensionSet
     }
     return rst;
   }
-  bool HasExtension(ExtensionIdentifier* extid)
+  bool HasExtension(ExtensionIdentifier extid)
   {
     for(int i = 0; i < exts.length; i++)
     {
@@ -1214,7 +1226,7 @@ class ExtensionSet
     }
     return false;
   }
-  void AddExtension(ExtensionIdentifier* extid)
+  void AddExtension(ExtensionIdentifier extid)
   {
     if(!HasExtension(extid))
     {
@@ -1222,7 +1234,8 @@ class ExtensionSet
     }
   }
  private:
-  static ExtensionIdentifier*[] exts;
+  ExtensionIdentifier[] exts;
+  static ExtensionSet _set;
 }
 template Ext()
 {
@@ -1393,191 +1406,162 @@ template Ext()
   }
   // Get
   // type 1
-  int GetExtension(ref ExtensionIdentifier extid)
+  int GetExtension(ref ExtensionIdentifier extid, int value)
   {
-    int value;
     extensionset.Find(extid).Get(value);
     return value;
   }
-  uint GetExtension(ref ExtensionIdentifier extid)
+  uint GetExtension(ref ExtensionIdentifier extid, uint value)
   {
-    uint value;
     extensionset.Find(extid).Get(value);
     return value;
   }
-  long GetExtension(ref ExtensionIdentifier extid)
+  long GetExtension(ref ExtensionIdentifier extid, long value)
   {
-    long value;
     extensionset.Find(extid).Get(value);
     return value;
   }
-  ulong GetExtension(ref ExtensionIdentifier extid)
+  ulong GetExtension(ref ExtensionIdentifier extid, ulong value)
   {
-    ulong value;
     extensionset.Find(extid).Get(value);
     return value;
   }
-  double GetExtension(ref ExtensionIdentifier extid)
+  double GetExtension(ref ExtensionIdentifier extid, double value)
   {
-    double value;
     extensionset.Find(extid).Get(value);
     return value;
   }
-  float GetExtension(ref ExtensionIdentifier extid)
+  float GetExtension(ref ExtensionIdentifier extid, float value)
   {
-    float value;
     extensionset.Find(extid).Get(value);
     return value;
   }
-  byte[] GetExtension(ref ExtensionIdentifier extid)
+  byte[] GetExtension(ref ExtensionIdentifier extid, byte[] value)
   {
-    byte[] value;
     extensionset.Find(extid).Get(value);
     return value;
   }
-  char[] GetExtension(ref ExtensionIdentifier extid)
+  char[] GetExtension(ref ExtensionIdentifier extid, char[] value)
   {
-    char[] value;
     extensionset.Find(extid).Get(value);
     return value;
   }
-  bool GetExtension(ref ExtensionIdentifier extid)
+  bool GetExtension(ref ExtensionIdentifier extid, bool value)
   {
-    bool value;
     extensionset.Find(extid).Get(value);
     return value;
   }
-  Message GetExtension(ref ExtensionIdentifier extid)
+  Message GetExtension(ref ExtensionIdentifier extid, Message value)
   {
-    Message value;
     extensionset.Find(extid).Get(value);
     return value;
   }
   //type 2
-  int[] GetExtension(ref ExtensionIdentifier extid)
+  int[] GetExtension(ref ExtensionIdentifier extid, int[] values)
   {
-    int[] value;
-    extensionset.Find(extid).Get(value);
-    return value;
+    extensionset.Find(extid).Get(values);
+    return values;
   }
-  uint[] GetExtension(ref ExtensionIdentifier extid)
+  uint[] GetExtension(ref ExtensionIdentifier extid, uint[] values)
   {
-    uint[] value;
-    extensionset.Find(extid).Get(value);
-    return value;
+    extensionset.Find(extid).Get(values);
+    return values;
   }
-  long[] GetExtension(ref ExtensionIdentifier extid)
+  long[] GetExtension(ref ExtensionIdentifier extid, long[] values)
   {
-    long[] value;
-    extensionset.Find(extid).Get(value);
-    return value;
+    extensionset.Find(extid).Get(values);
+    return values;
   }
-  ulong[] GetExtension(ref ExtensionIdentifier extid)
+  ulong[] GetExtension(ref ExtensionIdentifier extid, ulong[] values)
   {
-    ulong[] value;
-    extensionset.Find(extid).Get(value);
-    return value;
+    extensionset.Find(extid).Get(values);
+    return values;
   }
-  double[] GetExtension(ref ExtensionIdentifier extid)
+  double[] GetExtension(ref ExtensionIdentifier extid, double[] values)
   {
-    double[] value;
-    extensionset.Find(extid).Get(value);
-    return value;
+    extensionset.Find(extid).Get(values);
+    return values;
   }
-  float[] GetExtension(ref ExtensionIdentifier extid)
+  float[] GetExtension(ref ExtensionIdentifier extid, float[] values)
   {
-    float[] value;
-    extensionset.Find(extid).Get(value);
-    return value;
+    extensionset.Find(extid).Get(values);
+    return values;
   }
-  byte[][] GetExtension(ref ExtensionIdentifier extid)
+  byte[][] GetExtension(ref ExtensionIdentifier extid, byte[][] values)
   {
-    byte[][] value;
-    extensionset.Find(extid).Get(value);
-    return value;
+    extensionset.Find(extid).Get(values);
+    return values;
   }
-  char[][] GetExtension(ref ExtensionIdentifier extid)
+  char[][] GetExtension(ref ExtensionIdentifier extid, char[][] values)
   {
-    char[][] value;
-    extensionset.Find(extid).Get(value);
-    return value;
+    extensionset.Find(extid).Get(values);
+    return values;
   }
-  bool[] GetExtension(ref ExtensionIdentifier extid)
+  bool[] GetExtension(ref ExtensionIdentifier extid, bool[] values)
   {
-    bool[] value;
-    extensionset.Find(extid).Get(value);
-    return value;
+    extensionset.Find(extid).Get(values);
+    return values;
   }
-  Message[] GetExtension(ref ExtensionIdentifier extid)
+  Message[] GetExtension(ref ExtensionIdentifier extid, Message[] values)
   {
-    Message[] value;
-    extensionset.Find(extid).Get(value);
-    return value;
+    extensionset.Find(extid).Get(values);
+    return values;
   }
   //type 3
-  int GetExtension(ref ExtensionIdentifier extid, int index)
+  int GetExtension(ref ExtensionIdentifier extid, int index, int value)
   {
-    int value;
     extensionset.Find(extid).Get(value, index);
     return value;
   }
-  uint GetExtension(ref ExtensionIdentifier extid, int index)
+  uint GetExtension(ref ExtensionIdentifier extid, int index, uint value)
   {
-    uint value;
     extensionset.Find(extid).Get(value, index);
     return value;
   }
-  long GetExtension(ref ExtensionIdentifier extid, int index)
+  long GetExtension(ref ExtensionIdentifier extid, int index, long value)
   {
-    long value;
     extensionset.Find(extid).Get(value, index);
     return value;
   }
-  ulong GetExtension(ref ExtensionIdentifier extid, int index)
+  ulong GetExtension(ref ExtensionIdentifier extid, int index, ulong value)
   {
-    ulong value;
     extensionset.Find(extid).Get(value, index);
     return value;
   }
-  double GetExtension(ref ExtensionIdentifier extid, int index)
+  double GetExtension(ref ExtensionIdentifier extid, int index, double value)
   {
-    double value;
     extensionset.Find(extid).Get(value, index);
     return value;
   }
-  float GetExtension(ref ExtensionIdentifier extid, int index)
+  float GetExtension(ref ExtensionIdentifier extid, int index, float value)
   {
-    float value;
     extensionset.Find(extid).Get(value, index);
     return value;
   }
-  byte[] GetExtension(ref ExtensionIdentifier extid, int index)
+  byte[] GetExtension(ref ExtensionIdentifier extid, int index, byte[] value)
   {
-    byte[] value;
     extensionset.Find(extid).Get(value, index);
     return value;
   }
-  char[] GetExtension(ref ExtensionIdentifier extid, int index)
+  char[] GetExtension(ref ExtensionIdentifier extid, int index, char[] value)
   {
-    char[] value;
     extensionset.Find(extid).Get(value, index);
     return value;
   }
-  bool GetExtension(ref ExtensionIdentifier extid, int index)
+  bool GetExtension(ref ExtensionIdentifier extid, int index, bool value)
   {
-    bool value;
     extensionset.Find(extid).Get(value, index);
     return value;
   }
-  Message GetExtension(ref ExtensionIdentifier extid, int index)
+  Message GetExtension(ref ExtensionIdentifier extid, int index, Message value)
   {
-    Message value;
     extensionset.Find(extid).Get(value, index);
     return value;
   }
   void SerializeExtension(ref CodedOutputStream output)
   {
-    ExtensionIdentifier*[] elements = extensionset.IsClass(this);
+
+    ExtensionIdentifier[] elements = extensionset.IsClass(this);
     for(int i = 0; i < elements.length; i++)
     {
       elements[i].Serialize(output);
